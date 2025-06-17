@@ -25,9 +25,9 @@ export default function parse(tokens: Token[]) {
   function parseExpression(token: Token) {
     if (token.type == TokenType.NUMBER) {
       let left = token;
-      if (nextToken()?.type == TokenType.PLUS) {
+      if (nextToken()?.type == TokenType.PLUS || TokenType.MINUS) {
         current++;
-        let operator = TokenType.PLUS;
+        let operator = tokens[current]?.type;
         current++;
         let right = tokens[current];
         if (!right) throw Error;

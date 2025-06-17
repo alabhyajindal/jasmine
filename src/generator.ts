@@ -19,6 +19,8 @@ function generateBinary(ast: BinaryExpr) {
 
   if (ast.operator == 'PLUS') {
     result = module.i32.add(left, right);
+  } else if (ast.operator == 'MINUS') {
+    result = module.i32.sub(left, right);
   }
 
   if (!result) {

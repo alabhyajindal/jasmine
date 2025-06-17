@@ -1,6 +1,7 @@
 export enum TokenType {
   NUMBER = 'NUMBER',
   PLUS = 'PLUS',
+  MINUS = 'MINUS',
 }
 
 export interface Token {
@@ -16,6 +17,8 @@ export default function scan(source: string) {
       tokens.push({ type: TokenType.NUMBER, literal: Number(char) });
     } else if (char.match(/\+/)) {
       tokens.push({ type: TokenType.PLUS, literal: '+' });
+    } else if (char.match(/\-/)) {
+      tokens.push({ type: TokenType.MINUS, literal: '-' });
     }
   }
 
