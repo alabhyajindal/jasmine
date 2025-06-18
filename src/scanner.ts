@@ -1,6 +1,19 @@
 import type Token from './Token';
 import TokenType from './TokenType';
 
+const keywords: Record<string, TokenType> = {
+  and: TokenType.AND,
+  else: TokenType.ELSE,
+  false: TokenType.FALSE,
+  fn: TokenType.FN,
+  if: TokenType.IF,
+  let: TokenType.LET,
+  or: TokenType.OR,
+  return: TokenType.RETURN,
+  true: TokenType.TRUE,
+  while: TokenType.WHILE,
+};
+
 let start = 0;
 let current = 0;
 let line = 1;
@@ -83,6 +96,10 @@ function scanToken() {
     default:
       if (isDigit(c)) {
         number();
+      } else if (isUnderscore(c) || isAlpha(c)) {
+        identifier();
+      } else {
+        throw new Error(`not implemented: ${c}`);
       }
   }
 }
@@ -129,6 +146,25 @@ function number() {
   addToken(TokenType.INTEGER, value);
 }
 
+function identifier() {
+  while (isUnderscore(peek()) || isAlpha(peek())) {
+    advance();
+  }
+
+  let text = source.substring(start, current);
+  let type = keywords[text] || TokenType.IDENTIFER;
+
+  addToken(type);
+}
+
 function isDigit(char: string) {
   return /\d/.test(char);
+}
+
+function isAlpha(char: string) {
+  return /[A-Z]|[a-z]/.test(char);
+}
+
+function isUnderscore(char: string) {
+  return /\_/.test(char);
 }

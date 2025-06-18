@@ -23,7 +23,20 @@ enum TokenType {
   LESS = 'LESS',
   LESS_EQUAL = 'LESS_EQUAL',
 
+  // Keywords.
+  AND = 'AND',
+  ELSE = 'ELSE',
+  FALSE = 'FALSE',
+  FN = 'FN',
+  IF = 'IF',
+  LET = 'LET',
+  OR = 'OR',
+  RETURN = 'RETURN',
+  TRUE = 'TRUE',
+  WHILE = 'WHILE',
+
   //   Literals
+  IDENTIFER = 'IDENTIFER',
   INTEGER = 'INTEGER',
 
   //   Misc
