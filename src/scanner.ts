@@ -14,6 +14,8 @@ export default function scan(sourceText: string) {
     start = current;
     scanToken();
   }
+
+  tokens.push({ type: TokenType.EOF, lexeme: '', literal: null, line });
   return tokens;
 }
 
@@ -50,6 +52,34 @@ function scanToken() {
     case '/':
       addToken(TokenType.SLASH);
       break;
+    case '!':
+      match('=') ? addToken(TokenType.BANG_EQUAL) : addToken(TokenType.BANG);
+      break;
+    case '=':
+      match('=') ? addToken(TokenType.EQUAL_EQUAL) : addToken(TokenType.EQUAL);
+      break;
+    case '<':
+      match('=') ? addToken(TokenType.LESS_EQUAL) : addToken(TokenType.LESS);
+      break;
+    case '>':
+      match('=') ? addToken(TokenType.GREATER_EQUAL) : addToken(TokenType.GREATER);
+      break;
+    case '#':
+      while (peek() != '\n' && !isAtEnd()) {
+        advance();
+      }
+      // Advance again to skip the new line character
+      advance();
+      line++;
+      break;
+    case ' ':
+    case '\r':
+    case '\t':
+      break;
+    case '\n':
+      addToken(TokenType.NEWLINE);
+      line++;
+      break;
     default:
       if (isDigit(c)) {
         number();
@@ -66,22 +96,22 @@ function advance() {
   return source[current - 1]!;
 }
 
-function addToken(type: TokenType, literal: null | string | number = null) {
+function addToken(type: TokenType, literal: Token['literal'] = null) {
   let lexeme = source.substring(start, current);
   tokens.push({ type, lexeme, literal, line } as Token);
 }
 
-// function match(expected) {
-//   if (isAtEnd()) {
-//     return false;
-//   }
-//   if (source[current] != expected) {
-//     return false;
-//   }
+function match(expected: string) {
+  if (isAtEnd()) {
+    return false;
+  }
+  if (source[current] != expected) {
+    return false;
+  }
 
-//   current++;
-//   return true;
-// }
+  current++;
+  return true;
+}
 
 function peek() {
   if (isAtEnd()) {

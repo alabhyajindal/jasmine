@@ -24,7 +24,7 @@ if (args.length == 2) {
 function run(source: string) {
   const tokens = scan(source);
   console.log(tokens);
-  // return;
+  return;
 
   const ast = parse(tokens);
   const wasmBinary = generate(ast);

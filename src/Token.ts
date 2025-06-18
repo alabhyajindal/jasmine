@@ -3,6 +3,6 @@ import type TokenType from './TokenType';
 export default interface Token {
   type: TokenType;
   lexeme: string;
-  literal: any;
+  literal: string | number | null;
   line: number;
 }
