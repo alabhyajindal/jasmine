@@ -1,26 +1,104 @@
-export enum TokenType {
-  NUMBER = 'NUMBER',
-  PLUS = 'PLUS',
-  MINUS = 'MINUS',
+import type Token from './Token';
+import TokenType from './TokenType';
+
+let start = 0;
+let current = 0;
+let line = 1;
+let tokens: Token[] = [];
+let source = '';
+
+export default function scan(sourceText: string) {
+  source = sourceText;
+
+  while (!isAtEnd()) {
+    start = current;
+    scanToken();
+  }
+  return tokens;
 }
 
-export interface Token {
-  type: TokenType;
-  literal: any;
+function scanToken() {
+  let c = advance();
+  switch (c) {
+    case '(':
+      addToken(TokenType.LEFT_PAREN);
+      break;
+    case ')':
+      addToken(TokenType.RIGHT_PAREN);
+      break;
+    case '{':
+      addToken(TokenType.LEFT_BRACE);
+      break;
+    case '}':
+      addToken(TokenType.RIGHT_BRACE);
+      break;
+    case ',':
+      addToken(TokenType.COMMA);
+      break;
+    case '.':
+      addToken(TokenType.DOT);
+      break;
+    case '-':
+      addToken(TokenType.MINUS);
+      break;
+    case '+':
+      addToken(TokenType.PLUS);
+      break;
+    case '*':
+      addToken(TokenType.STAR);
+      break;
+    case '/':
+      addToken(TokenType.SLASH);
+      break;
+    default:
+      if (isDigit(c)) {
+        number();
+      }
+  }
 }
 
-export default function scan(source: string) {
-  let tokens: Token[] = [];
+function isAtEnd() {
+  return current >= source.length;
+}
 
-  for (let char of source) {
-    if (char.match(/\d/g)) {
-      tokens.push({ type: TokenType.NUMBER, literal: Number(char) });
-    } else if (char.match(/\+/)) {
-      tokens.push({ type: TokenType.PLUS, literal: '+' });
-    } else if (char.match(/\-/)) {
-      tokens.push({ type: TokenType.MINUS, literal: '-' });
-    }
+function advance() {
+  current++;
+  return source[current - 1]!;
+}
+
+function addToken(type: TokenType, literal: null | string | number = null) {
+  let lexeme = source.substring(start, current);
+  tokens.push({ type, lexeme, literal, line } as Token);
+}
+
+// function match(expected) {
+//   if (isAtEnd()) {
+//     return false;
+//   }
+//   if (source[current] != expected) {
+//     return false;
+//   }
+
+//   current++;
+//   return true;
+// }
+
+function peek() {
+  if (isAtEnd()) {
+    return '\0';
+  }
+  return source[current]!;
+}
+
+function number() {
+  while (isDigit(peek())) {
+    advance();
   }
 
-  return tokens;
+  let value = Number.parseInt(source.substring(start, current));
+  addToken(TokenType.INTEGER, value);
+}
+
+function isDigit(char: string) {
+  return /\d/.test(char);
 }

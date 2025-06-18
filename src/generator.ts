@@ -10,8 +10,6 @@ export default function generate(ast: any) {
 function generateBinary(ast: BinaryExpr) {
   const module = new binaryen.Module();
 
-  console.log(ast);
-
   const ii = binaryen.createType([binaryen.i32, binaryen.i32]);
   const left = module.i32.const(ast.left.literal);
   const right = module.i32.const(ast.right.literal);

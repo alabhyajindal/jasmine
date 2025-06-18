@@ -1,4 +1,5 @@
-import { TokenType, type Token } from './scanner';
+import type Token from './Token';
+import TokenType from './TokenType';
 
 export interface BinaryExpr {
   type: 'BinaryExpr';
@@ -23,7 +24,7 @@ export default function parse(tokens: Token[]) {
   }
 
   function parseExpression(token: Token) {
-    if (token.type == TokenType.NUMBER) {
+    if (token.type == TokenType.INTEGER) {
       let left = token;
       if (nextToken()?.type == TokenType.PLUS || TokenType.MINUS) {
         current++;
