@@ -1,21 +1,39 @@
-import generate from './generator';
-import parse from './parser';
 import scan from './scanner';
+import parse from './parser';
+import generate from './generator';
 
-const sourceFile = Bun.file('./source.sp');
-const sourceText = await sourceFile.text();
+const args = Bun.argv;
 
-const tokens = scan(sourceText);
-const ast = parse(tokens);
-const wasmBinary = generate(ast);
+if (args.length == 2) {
+  const prompt = '> ';
+  process.stdout.write(prompt);
 
-if (!wasmBinary) {
-  throw Error('Failed to generate binary.');
+  for await (const line of console) {
+    if (line) {
+      run(line);
+      process.stdout.write(prompt);
+    }
+  }
+} else if (args.length == 3) {
+  const filePath = Bun.argv[2]!;
+  const sourceFile = Bun.file(filePath);
+  const sourceText = await sourceFile.text();
+  run(sourceText);
 }
 
-// Example usage with the WebAssembly API
-const compiled = new WebAssembly.Module(wasmBinary);
-const instance = new WebAssembly.Instance(compiled, {});
+function run(source: string) {
+  const tokens = scan(source);
+  const ast = parse(tokens);
+  const wasmBinary = generate(ast);
 
-// @ts-expect-error: Exported functions are available under exports
-console.log(instance.exports.main());
+  if (!wasmBinary) {
+    throw Error('Failed to generate binary.');
+  }
+
+  // Example usage with the WebAssembly API
+  const compiled = new WebAssembly.Module(wasmBinary);
+  const instance = new WebAssembly.Instance(compiled, {});
+
+  // @ts-expect-error: Exported functions are available under exports
+  console.log(instance.exports.main());
+}
