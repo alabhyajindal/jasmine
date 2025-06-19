@@ -39,11 +39,10 @@ export default function parse(tokens: Token[]) {
   }
 
   let expr;
-  while (!isAtEnd()) {
-    let token = tokens[current];
-    if (!token) return;
+  let token = tokens[current];
+  while (token && token?.type != TokenType.EOF) {
     expr = parseExpression(token);
-    current++;
+    token = tokens[++current];
   }
 
   return expr;
