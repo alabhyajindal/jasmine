@@ -14,6 +14,10 @@ const keywords: Record<string, TokenType> = {
   while: TokenType.WHILE,
 };
 
+const types: Record<string, TokenType> = {
+  i32: TokenType.i32,
+};
+
 let start = 0;
 let current = 0;
 let line = 1;
@@ -46,6 +50,9 @@ function scanToken() {
       break;
     case '}':
       addToken(TokenType.RIGHT_BRACE);
+      break;
+    case ':':
+      addToken(TokenType.COLON);
       break;
     case ',':
       addToken(TokenType.COMMA);
@@ -96,7 +103,8 @@ function scanToken() {
     default:
       if (isDigit(c)) {
         number();
-      } else if (isUnderscore(c) || isAlpha(c)) {
+        // Identifiers must begin with a character
+      } else if (isAlpha(c)) {
         identifier();
       } else {
         throw new Error(`not implemented: ${c}`);
@@ -146,13 +154,14 @@ function number() {
   addToken(TokenType.INTEGER, value);
 }
 
+// Handles keywords, types and identifiers
 function identifier() {
-  while (isUnderscore(peek()) || isAlpha(peek())) {
+  while (isUnderscore(peek()) || isAlpha(peek()) || isDigit(peek())) {
     advance();
   }
 
   let text = source.substring(start, current);
-  let type = keywords[text] || TokenType.IDENTIFER;
+  let type = keywords[text] || types[text] || TokenType.IDENTIFER;
 
   addToken(type);
 }

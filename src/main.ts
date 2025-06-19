@@ -17,6 +17,11 @@ if (args.length == 2) {
 } else if (args.length == 3) {
   const filePath = Bun.argv[2]!;
   const sourceFile = Bun.file(filePath);
+  const fileExists = await sourceFile.exists();
+  if (!fileExists) {
+    console.error(`File not found: ${filePath}.`);
+    process.exit();
+  }
   const sourceText = await sourceFile.text();
   run(sourceText);
 }

@@ -23,7 +23,7 @@ enum TokenType {
   LESS = 'LESS',
   LESS_EQUAL = 'LESS_EQUAL',
 
-  // Keywords.
+  // Keywords
   AND = 'AND',
   ELSE = 'ELSE',
   FALSE = 'FALSE',
@@ -34,6 +34,9 @@ enum TokenType {
   RETURN = 'RETURN',
   TRUE = 'TRUE',
   WHILE = 'WHILE',
+
+  // Types
+  i32 = 'i32',
 
   //   Literals
   IDENTIFER = 'IDENTIFER',
