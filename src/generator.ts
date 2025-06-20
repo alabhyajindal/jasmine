@@ -1,9 +1,10 @@
 import binaryen from 'binaryen';
-import type { BinaryExpr } from './parser';
+import type { BinaryExpr, Expr } from './Expr';
+import TokenType from './TokenType';
 
-export default function generate(ast: any) {
+export default function generate(ast: Expr) {
   if (ast.type == 'BinaryExpr') {
-    return generateBinary(ast);
+    return generateBinary(ast as BinaryExpr);
   }
 }
 
@@ -11,13 +12,13 @@ function generateBinary(ast: BinaryExpr) {
   const module = new binaryen.Module();
 
   const ii = binaryen.createType([binaryen.i32, binaryen.i32]);
-  const left = module.i32.const(ast.left.literal);
-  const right = module.i32.const(ast.right.literal);
+  const left = module.i32.const(ast.left.value);
+  const right = module.i32.const(ast.right.value);
   let result;
 
-  if (ast.operator == 'PLUS') {
+  if (ast.operator.type == TokenType.PLUS) {
     result = module.i32.add(left, right);
-  } else if (ast.operator == 'MINUS') {
+  } else if (ast.operator.type == TokenType.MINUS) {
     result = module.i32.sub(left, right);
   }
 

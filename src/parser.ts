@@ -1,4 +1,4 @@
-import type { BinaryExpr, LiteralExpr } from './Expr';
+import type { BinaryExpr, Expr, LiteralExpr } from './Expr';
 import type Token from './Token';
 import TokenType from './TokenType';
 
@@ -8,9 +8,8 @@ let tokens: Token[];
 
 function parseStatement() {
   let expr = parseExpression();
-  console.log(expr);
   if (consume(TokenType.NEWLINE)) {
-    return true;
+    return expr;
   }
 }
 
@@ -19,19 +18,20 @@ function parseExpression() {
   if (consume(TokenType.PLUS)) {
     let operator = previous();
     let right = parseTerm();
-    return { left, operator, right } as BinaryExpr;
+    return { left, operator, right, type: 'BinaryExpr' } as BinaryExpr;
   }
 }
 
 function parseTerm() {
   if (consume(TokenType.INTEGER)) {
-    return { value: previous().literal } as LiteralExpr;
+    return { value: previous().literal, type: 'LiteralExpr' } as LiteralExpr;
   }
 }
 
-export default function parse(t: Token[]) {
+export default function parse(t: Token[]): Expr {
   tokens = t;
-  parseStatement();
+  let stmt = parseStatement();
+  return stmt;
 }
 
 function advance() {
