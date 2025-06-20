@@ -1,50 +1,51 @@
+import type { BinaryExpr, LiteralExpr } from './Expr';
 import type Token from './Token';
 import TokenType from './TokenType';
 
-export interface BinaryExpr {
-  type: 'BinaryExpr';
-  left: Token;
-  operator: TokenType;
-  right: Token;
+// Initializing variables
+let current = 0;
+let tokens: Token[];
+
+function parseStatement() {
+  let expr = parseExpression();
+  console.log(expr);
+  if (consume(TokenType.NEWLINE)) {
+    return true;
+  }
 }
 
-export default function parse(tokens: Token[]) {
-  console.log(tokens);
-  let current = 0;
-
-  function isAtEnd() {
-    if (current >= tokens.length) {
-      return true;
-    }
+function parseExpression() {
+  let left = parseTerm();
+  if (consume(TokenType.PLUS)) {
+    let operator = previous();
+    let right = parseTerm();
+    return { left, operator, right } as BinaryExpr;
   }
+}
 
-  function nextToken() {
-    if (!isAtEnd()) {
-      return tokens[current + 1];
-    }
+function parseTerm() {
+  if (consume(TokenType.INTEGER)) {
+    return { value: previous().literal } as LiteralExpr;
   }
+}
 
-  function parseExpression(token: Token) {
-    if (token.type == TokenType.INTEGER) {
-      let left = token;
-      if (nextToken()?.type == TokenType.PLUS || TokenType.MINUS) {
-        current++;
-        let operator = tokens[current]?.type;
-        current++;
-        let right = tokens[current];
-        if (!right) throw Error;
-        return { type: 'BinaryExpr', left, operator, right } as BinaryExpr;
-      }
-      return { type: 'Expr', expression: left };
-    }
+export default function parse(t: Token[]) {
+  tokens = t;
+  parseStatement();
+}
+
+function advance() {
+  current++;
+}
+
+function consume(expected: TokenType) {
+  if (tokens[current].type == expected) {
+    advance();
+    return true;
   }
+  return false;
+}
 
-  let expr;
-  let token = tokens[current];
-  while (token && token?.type != TokenType.EOF) {
-    expr = parseExpression(token);
-    token = tokens[++current];
-  }
-
-  return expr;
+function previous() {
+  return tokens[current - 1];
 }

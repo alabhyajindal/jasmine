@@ -1,4 +1,4 @@
 statement   = expression '\n' ;
-expression  = term (operator term)* ;
+expression  = term operator term ;
 operator    = '+' | '-' ;
 term        = INTEGER ;
