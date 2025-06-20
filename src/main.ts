@@ -32,7 +32,7 @@ function run(source: string) {
   // return;
 
   const ast = parse(tokens);
-  console.log(ast);
+  return;
   const wasmBinary = generate(ast);
 
   if (!wasmBinary) {

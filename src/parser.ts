@@ -9,6 +9,7 @@ export interface BinaryExpr {
 }
 
 export default function parse(tokens: Token[]) {
+  console.log(tokens);
   let current = 0;
 
   function isAtEnd() {
