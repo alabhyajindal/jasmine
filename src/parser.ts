@@ -8,18 +8,21 @@ let tokens: Token[];
 
 function parseStatement() {
   let expr = parseExpression();
+  console.log(expr);
   if (consume(TokenType.NEWLINE)) {
     return expr;
   }
 }
 
+// make the parser handle any number of additions (a + b + c) - update grammar first - then parser - then go to code generation
 function parseExpression() {
   let left = parseTerm();
-  if (consume(TokenType.PLUS)) {
+  while (consume(TokenType.PLUS)) {
     let operator = previous();
-    let right = parseTerm();
+    let right = parseExpression();
     return { left, operator, right, type: 'BinaryExpr' } as BinaryExpr;
   }
+  return left;
 }
 
 function parseTerm() {
