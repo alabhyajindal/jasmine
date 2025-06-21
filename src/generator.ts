@@ -3,40 +3,10 @@ import type { BinaryExpr, Expr } from './Expr';
 import TokenType from './TokenType';
 
 export default function generate(ast: Expr) {
-  if (ast.type == 'BinaryExpr') {
-    return generateBinary(ast as BinaryExpr);
-  }
-}
-
-function generateBinary(ast: BinaryExpr) {
   const module = new binaryen.Module();
+  const expr = generateExpression(module, ast);
 
-  const ii = binaryen.createType([binaryen.i32, binaryen.i32]);
-  const left = module.i32.const(ast.left.value);
-  const right = module.i32.const(ast.right.value);
-  let result;
-
-  if (ast.operator.type == TokenType.PLUS) {
-    result = module.i32.add(left, right);
-  } else if (ast.operator.type == TokenType.MINUS) {
-    result = module.i32.sub(left, right);
-  }
-
-  if (!result) {
-    throw Error('Unsupported operator.');
-  }
-
-  module.addFunction(
-    'main',
-    ii,
-    binaryen.i32,
-    [binaryen.i32],
-    module.block(null, [
-      module.local.set(2, result),
-      module.return(module.local.get(2, binaryen.i32)),
-    ])
-  );
-
+  module.addFunction('main', binaryen.createType([]), binaryen.i32, [], expr);
   module.addFunctionExport('main', 'main');
 
   // Validate the module
@@ -49,4 +19,25 @@ function generateBinary(ast: BinaryExpr) {
   const wasmBinary = module.emitBinary();
 
   return wasmBinary;
+}
+
+function generateExpression(module: binaryen.Module, ast: Expr) {
+  switch (ast.type) {
+    case 'BinaryExpr':
+      return generateBinary(module, ast);
+    case 'LiteralExpr':
+      return module.i32.const(ast.value);
+  }
+}
+
+function generateBinary(module: binaryen.Module, ast: BinaryExpr) {
+  const left = generateExpression(module, ast.left);
+  const right = generateExpression(module, ast.right);
+
+  switch (ast.operator.type) {
+    case TokenType.PLUS:
+      return module.i32.add(left, right);
+    case TokenType.MINUS:
+      return module.i32.sub(left, right);
+  }
 }

@@ -8,7 +8,6 @@ let tokens: Token[];
 
 function parseStatement() {
   let expr = parseExpression();
-  console.log(expr);
   if (consume(TokenType.NEWLINE)) {
     return expr;
   }
