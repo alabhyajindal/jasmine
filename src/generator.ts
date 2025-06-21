@@ -21,7 +21,7 @@ export default function generate(ast: Expr) {
   return wasmBinary;
 }
 
-function generateExpression(module: binaryen.Module, ast: Expr) {
+function generateExpression(module: binaryen.Module, ast: Expr): number {
   switch (ast.type) {
     case 'BinaryExpr':
       return generateBinary(module, ast);
@@ -30,7 +30,8 @@ function generateExpression(module: binaryen.Module, ast: Expr) {
   }
 }
 
-function generateBinary(module: binaryen.Module, ast: BinaryExpr) {
+// A number like 5517120 is returned by this function - which is not the result value of performing the addition. Could be something related to Wasm internal
+function generateBinary(module: binaryen.Module, ast: BinaryExpr): number {
   const left = generateExpression(module, ast.left);
   const right = generateExpression(module, ast.right);
 
@@ -39,5 +40,7 @@ function generateBinary(module: binaryen.Module, ast: BinaryExpr) {
       return module.i32.add(left, right);
     case TokenType.MINUS:
       return module.i32.sub(left, right);
+    default:
+      throw new Error(`Unsupported operator: ${ast.operator}`);
   }
 }

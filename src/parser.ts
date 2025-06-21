@@ -13,10 +13,10 @@ function parseStatement() {
   }
 }
 
-// make the parser handle any number of additions (a + b + c) - update grammar first - then parser - then go to code generation
+// Parser currently generates incorrect parse tree (left or right associativity issue)
 function parseExpression() {
   let left = parseTerm();
-  while (consume(TokenType.PLUS)) {
+  while (consume(TokenType.PLUS, TokenType.MINUS)) {
     let operator = previous();
     let right = parseExpression();
     return { left, operator, right, type: 'BinaryExpr' } as BinaryExpr;
@@ -40,8 +40,8 @@ function advance() {
   current++;
 }
 
-function consume(expected: TokenType) {
-  if (tokens[current].type == expected) {
+function consume(...expected: TokenType[]) {
+  if (expected.includes(tokens[current].type)) {
     advance();
     return true;
   }
