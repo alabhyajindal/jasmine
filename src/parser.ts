@@ -9,7 +9,6 @@ let tokens: Token[];
 function statement() {
   let expr = expression();
   if (match(TokenType.NEWLINE)) {
-    console.log(expr);
     return expr;
   }
 }

@@ -28,7 +28,8 @@ function expression(module: binaryen.Module, ast: Expr): number {
     case 'LiteralExpr':
       return module.i32.const(ast.value);
     default:
-      throw new Error('Unsupported ast type.');
+      console.error(ast.type);
+      throw Error('Unsupported ast type.');
   }
 }
 
@@ -42,7 +43,12 @@ function binary(module: binaryen.Module, ast: BinaryExpr): number {
       return module.i32.add(left, right);
     case TokenType.MINUS:
       return module.i32.sub(left, right);
+    case TokenType.SLASH:
+      return module.i32.div_s(left, right);
+    case TokenType.STAR:
+      return module.i32.mul(left, right);
     default:
-      throw new Error(`Unsupported operator: ${ast.operator}`);
+      console.error(ast.operator);
+      throw Error(`Unsupported operator.`);
   }
 }
