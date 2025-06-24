@@ -1,6 +1,9 @@
 import scan from './scanner';
 import parse from './parser';
 import generate from './compiler';
+import sphereSource from '../source.txt' with {type: 'text'}; // Included to reload Bun when the source text changes
+
+console.log(sphereSource)
 
 const args = Bun.argv;
 
