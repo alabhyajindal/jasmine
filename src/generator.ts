@@ -27,6 +27,8 @@ function expression(module: binaryen.Module, ast: Expr): number {
       return binary(module, ast);
     case 'LiteralExpr':
       return module.i32.const(ast.value);
+    default:
+      throw new Error('Unsupported ast type.');
   }
 }
 

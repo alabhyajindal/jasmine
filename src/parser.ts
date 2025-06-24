@@ -1,4 +1,4 @@
-import type { BinaryExpr, Expr, LiteralExpr } from './Expr';
+import type { BinaryExpr, Expr, LiteralExpr, UnaryExpr } from './Expr';
 import type Token from './Token';
 import TokenType from './TokenType';
 
@@ -8,52 +8,52 @@ let tokens: Token[];
 
 function statement() {
   let expr = expression();
-  console.log(expr);
   if (match(TokenType.NEWLINE)) {
+    console.log(expr);
     return expr;
   }
 }
 
-function expression() {
+function expression(): Expr {
   return equality();
 }
 
-function equality() {
+function equality(): Expr {
   let expr = comparison();
   while (match(TokenType.BANG_EQUAL, TokenType.EQUAL_EQUAL)) {
     let operator = previous();
     let right = comparison();
-    expr = { left: expr, operator, right };
+    expr = { left: expr, operator, right, type: 'BinaryExpr' };
   }
 
   return expr;
 }
 
-function comparison() {
+function comparison(): Expr {
   let expr = term();
 
   while (match(TokenType.GREATER, TokenType.GREATER_EQUAL, TokenType.LESS, TokenType.LESS_EQUAL)) {
     let operator = previous();
     let right = term();
-    expr = { left: expr, operator, right };
+    expr = { left: expr, operator, right, type: 'BinaryExpr' };
   }
 
   return expr;
 }
 
-function term() {
+function term(): Expr {
   let expr = factor();
   while (match(TokenType.PLUS, TokenType.MINUS)) {
     let operator = previous();
-    let right = primary();
-    expr = { left: expr, operator, right, type: 'BinaryExpr' } as BinaryExpr;
+    let right = factor();
+    expr = { left: expr, operator, right, type: 'BinaryExpr' };
   }
 
   return expr;
 }
 
-function factor() {
-  let expr = unary();
+function factor(): Expr {
+  let expr: Expr = unary();
   while (match(TokenType.SLASH, TokenType.STAR)) {
     let operator = previous();
     let right = unary();
@@ -63,25 +63,26 @@ function factor() {
   return expr;
 }
 
-function unary() {
+function unary(): UnaryExpr | LiteralExpr {
   if (match(TokenType.BANG, TokenType.MINUS)) {
     let operator = previous();
     let right = unary();
-    return { operator, right };
+    return { operator, right } as UnaryExpr;
   }
 
   return primary();
 }
 
-function primary() {
+function primary(): LiteralExpr {
   if (match(TokenType.INTEGER)) {
-    return { value: previous().literal, type: 'LiteralExpr' } as LiteralExpr;
+    return { value: previous().literal as number, type: 'LiteralExpr' };
   }
+  throw new Error('Bad literal expression.');
 }
 
 export default function parse(t: Token[]): Expr {
   tokens = t;
-  let stmt = statement();
+  let stmt = statement()!;
   return stmt;
 }
 
@@ -95,7 +96,7 @@ function match(...types: TokenType[]) {
   return false;
 }
 
-function check(type) {
+function check(type: TokenType) {
   if (isAtEnd()) return false;
   return peek()?.type == type;
 }
@@ -110,9 +111,9 @@ function isAtEnd() {
 }
 
 function peek() {
-  return tokens[current];
+  return tokens[current]!;
 }
 
 function previous() {
-  return tokens[current - 1];
+  return tokens[current - 1]!;
 }
