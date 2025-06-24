@@ -6,25 +6,25 @@ import TokenType from './TokenType';
 let current = 0;
 let tokens: Token[];
 
-function parseStatement() {
-  let expr = parseExpression();
+function statement() {
+  let expr = expression();
   if (consume(TokenType.NEWLINE)) {
     return expr;
   }
 }
 
 // Parser currently generates incorrect parse tree (left or right associativity issue)
-function parseExpression() {
-  let left = parseTerm();
+function expression() {
+  let expr = primary();
   while (consume(TokenType.PLUS, TokenType.MINUS)) {
     let operator = previous();
-    let right = parseExpression();
-    return { left, operator, right, type: 'BinaryExpr' } as BinaryExpr;
+    let right = primary();
+    expr = { left: expr, operator, right, type: 'BinaryExpr' } as BinaryExpr;
   }
-  return left;
+  return expr;
 }
 
-function parseTerm() {
+function primary() {
   if (consume(TokenType.INTEGER)) {
     return { value: previous().literal, type: 'LiteralExpr' } as LiteralExpr;
   }
@@ -32,7 +32,7 @@ function parseTerm() {
 
 export default function parse(t: Token[]): Expr {
   tokens = t;
-  let stmt = parseStatement();
+  let stmt = statement();
   return stmt;
 }
 
