@@ -3,7 +3,7 @@ import type { BinaryExpr, Expr } from './Expr';
 import TokenType from './TokenType';
 import type { Stmt } from './Stmt';
 
-export default function generate(statements: Stmt[]) {
+export default function compile(statements: Stmt[]) {
   // console.log(JSON.stringify(statements));
   // console.log('yoooooooooooooo');
   // return;
@@ -15,7 +15,7 @@ export default function generate(statements: Stmt[]) {
     throw Error('Empty body.');
   }
 
-  module.addFunction('main', binaryen.createType([]), binaryen.i32, [], body);
+  module.addFunction('main', binaryen.createType([]), binaryen.none, [], body);
   module.addFunctionExport('main', 'main');
 
   // Validate the module
@@ -42,13 +42,14 @@ function program(module: binaryen.Module, statements: Stmt[]) {
     throw Error('No statements to compile.');
   }
 
-  return res.pop();
+  return module.block(null, res, binaryen.none);
 }
 
 function statement(module: binaryen.Module, stmt: Stmt) {
   switch (stmt.type) {
     case 'ExprStmt':
-      return expression(module, stmt.expression);
+      let expr = expression(module, stmt.expression);
+      return module.drop(expr);
   }
 }
 

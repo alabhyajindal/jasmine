@@ -1,6 +1,6 @@
 import scan from './scanner';
 import parse from './parser';
-import generate from './compiler';
+import compile from './compiler';
 import sphereSource from '../source.txt' with {type: 'text'}; // Included to reload Bun when the source text changes
 
 console.log(sphereSource)
@@ -35,7 +35,7 @@ function run(source: string) {
 
   // console.log(statements);
   // return;
-  const wasmBinary = generate(statements);
+  const wasmBinary = compile(statements);
 
   if (!wasmBinary) {
     throw Error('Failed to generate binary.');
