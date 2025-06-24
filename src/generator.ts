@@ -11,6 +11,10 @@ export default function generate(statements: Stmt[]) {
   const module = new binaryen.Module();
   const body = program(module, statements);
 
+  if (!body) {
+    throw Error('Empty body.');
+  }
+
   module.addFunction('main', binaryen.createType([]), binaryen.i32, [], body);
   module.addFunctionExport('main', 'main');
 
@@ -34,7 +38,11 @@ function program(module: binaryen.Module, statements: Stmt[]) {
     res.push(statement(module, stmt));
   }
 
-  return res;
+  if (res.length == 0) {
+    throw Error('No statements to compile.');
+  }
+
+  return res.pop();
 }
 
 function statement(module: binaryen.Module, stmt: Stmt) {
@@ -48,7 +56,7 @@ function expression(module: binaryen.Module, expression: Expr): number {
   // console.log(expression);
   switch (expression.type) {
     case 'BinaryExpr':
-      return binary(module, expression);
+      return binaryExpression(module, expression);
     case 'LiteralExpr':
       return module.i32.const(expression.value);
     default:
@@ -58,7 +66,7 @@ function expression(module: binaryen.Module, expression: Expr): number {
 }
 
 // A number like 5517120 is returned by this function - which is not the result value of performing the addition. Could be something related to Wasm internal
-function binary(module: binaryen.Module, ast: BinaryExpr): number {
+function binaryExpression(module: binaryen.Module, ast: BinaryExpr): number {
   const left = expression(module, ast.left);
   const right = expression(module, ast.right);
 
