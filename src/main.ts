@@ -1,6 +1,6 @@
 import scan from './scanner';
 import parse from './parser';
-import generate from './generator';
+import generate from './compiler';
 
 const args = Bun.argv;
 
