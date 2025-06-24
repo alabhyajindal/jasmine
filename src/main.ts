@@ -28,11 +28,11 @@ if (args.length == 2) {
 
 function run(source: string) {
   const tokens = scan(source);
-  const ast = parse(tokens);
+  const statements = parse(tokens);
 
-  // console.log(ast);
+  // console.log(statements);
   // return;
-  const wasmBinary = generate(ast);
+  const wasmBinary = generate(statements);
 
   if (!wasmBinary) {
     throw Error('Failed to generate binary.');

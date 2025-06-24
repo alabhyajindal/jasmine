@@ -1,4 +1,8 @@
-statement   → expression '\n' ;
+program     → statement* EOF ;
+statement   → exprStmt ;
+exprStmt    → expression "\n" ;
+
+
 expression  → equality ;
 equality    → comparison ( ( "!=" | "==" ) comparison )* ;
 comparison  → term ( ( ">" | ">=" | "<" | "<=" ) term )* ;

@@ -1,4 +1,5 @@
 import type { BinaryExpr, Expr, LiteralExpr, UnaryExpr } from './Expr';
+import type { ExprStmt, Stmt } from './Stmt';
 import type Token from './Token';
 import TokenType from './TokenType';
 
@@ -6,11 +7,25 @@ import TokenType from './TokenType';
 let current = 0;
 let tokens: Token[];
 
-function statement() {
-  let expr = expression();
-  if (match(TokenType.NEWLINE)) {
-    return expr;
+export default function parse(t: Token[]) {
+  tokens = t;
+  let statements = [];
+  while (!isAtEnd()) {
+    statements.push(statement());
   }
+
+  // console.log(JSON.stringify(statements));
+  return statements;
+}
+
+function statement() {
+  return expressionStatement();
+}
+
+function expressionStatement(): ExprStmt {
+  let expr = expression();
+  consume(TokenType.NEWLINE, "Expected '\n' after expression.");
+  return { expression: expr, type: 'ExprStmt' };
 }
 
 function expression(): Expr {
@@ -79,12 +94,6 @@ function primary(): LiteralExpr {
   throw new Error('Bad literal expression.');
 }
 
-export default function parse(t: Token[]): Expr {
-  tokens = t;
-  let stmt = statement()!;
-  return stmt;
-}
-
 function match(...types: TokenType[]) {
   for (let type of types) {
     if (check(type)) {
@@ -115,4 +124,16 @@ function peek() {
 
 function previous() {
   return tokens[current - 1]!;
+}
+
+function consume(type: TokenType, msg: string) {
+  if (check(type)) {
+    return advance();
+  }
+
+  reportError(peek(), msg);
+}
+
+function reportError(token: Token, msg: string) {
+  console.error(`[line ${token.line} Error at ${token.lexeme}: ${msg}`);
 }

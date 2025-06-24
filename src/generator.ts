@@ -1,12 +1,17 @@
 import binaryen from 'binaryen';
 import type { BinaryExpr, Expr } from './Expr';
 import TokenType from './TokenType';
+import type { Stmt } from './Stmt';
 
-export default function generate(ast: Expr) {
+export default function generate(statements: Stmt[]) {
+  // console.log(JSON.stringify(statements));
+  // console.log('yoooooooooooooo');
+  // return;
+
   const module = new binaryen.Module();
-  const expr = expression(module, ast);
+  const body = program(module, statements);
 
-  module.addFunction('main', binaryen.createType([]), binaryen.i32, [], expr);
+  module.addFunction('main', binaryen.createType([]), binaryen.i32, [], body);
   module.addFunctionExport('main', 'main');
 
   // Validate the module
@@ -21,14 +26,33 @@ export default function generate(ast: Expr) {
   return wasmBinary;
 }
 
-function expression(module: binaryen.Module, ast: Expr): number {
-  switch (ast.type) {
+function program(module: binaryen.Module, statements: Stmt[]) {
+  let res = [];
+  for (let stmt of statements) {
+    // console.log(stmt);
+    // console.log('---');
+    res.push(statement(module, stmt));
+  }
+
+  return res;
+}
+
+function statement(module: binaryen.Module, stmt: Stmt) {
+  switch (stmt.type) {
+    case 'ExprStmt':
+      return expression(module, stmt.expression);
+  }
+}
+
+function expression(module: binaryen.Module, expression: Expr): number {
+  // console.log(expression);
+  switch (expression.type) {
     case 'BinaryExpr':
-      return binary(module, ast);
+      return binary(module, expression);
     case 'LiteralExpr':
-      return module.i32.const(ast.value);
+      return module.i32.const(expression.value);
     default:
-      console.error(ast.type);
+      console.error(expression.type);
       throw Error('Unsupported ast type.');
   }
 }
