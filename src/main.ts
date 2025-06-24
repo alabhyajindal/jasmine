@@ -31,20 +31,31 @@ if (args.length == 2) {
 
 function run(source: string) {
   const tokens = scan(source);
-  const statements = parse(tokens);
-
-  // console.log(statements);
+  // console.log(tokens)
   // return;
+  const statements = parse(tokens);
+  // console.log(statements);
+
   const wasmBinary = compile(statements);
 
   if (!wasmBinary) {
     throw Error('Failed to generate binary.');
   }
 
+
+  // Define the imports that WebAssembly expects
+const imports = {
+  console: {
+    i32: (value: number) => {
+      console.log(value);
+    },
+  },
+};
+  
   // Example usage with the WebAssembly API
   const compiled = new WebAssembly.Module(wasmBinary);
-  const instance = new WebAssembly.Instance(compiled, {});
+  const instance = new WebAssembly.Instance(compiled, imports);
 
   // @ts-expect-error: Exported functions are available under exports
-  console.log(instance.exports.main());
+  instance.exports.main();
 }

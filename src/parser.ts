@@ -1,5 +1,5 @@
 import type { BinaryExpr, Expr, LiteralExpr, UnaryExpr } from './Expr';
-import type { ExprStmt, Stmt } from './Stmt';
+import type { ExprStmt, PrintStmt, Stmt } from './Stmt';
 import type Token from './Token';
 import TokenType from './TokenType';
 
@@ -19,7 +19,17 @@ export default function parse(t: Token[]) {
 }
 
 function statement() {
+  if (match(TokenType.PRINT)) {
+    return printStatement();
+  }
+
   return expressionStatement();
+}
+
+function printStatement(): PrintStmt {
+  let value = expression();
+  consume(TokenType.NEWLINE, "Expected '\n' after expression.");
+  return { expression: value, type: 'PrintStmt' };
 }
 
 function expressionStatement(): ExprStmt {

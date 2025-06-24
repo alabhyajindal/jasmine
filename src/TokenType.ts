@@ -34,6 +34,7 @@ enum TokenType {
   RETURN = 'RETURN',
   TRUE = 'TRUE',
   WHILE = 'WHILE',
+  PRINT = 'PRINT',
 
   // Types
   i32 = 'i32',

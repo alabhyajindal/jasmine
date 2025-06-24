@@ -15,16 +15,28 @@ export default function compile(statements: Stmt[]) {
     throw Error('Empty body.');
   }
 
+  // Import for print function
+  module.addFunctionImport(
+    'print_i32',
+    'console',
+    'i32',
+    binaryen.createType([binaryen.i32]),
+    binaryen.none
+  );
+
   module.addFunction('main', binaryen.createType([]), binaryen.none, [], body);
   module.addFunctionExport('main', 'main');
 
+  // Wasm text before validation to view the compiled output
+  // const wasmText = module.emitText();
+  // console.log(wasmText);
+
   // Validate the module
   if (!module.validate()) {
-    throw new Error('Validation error.');
+    throw Error('Validation error.');
   }
 
   // Emitting WebAssembly
-  const wasmText = module.emitText();
   const wasmBinary = module.emitBinary();
 
   return wasmBinary;
@@ -38,10 +50,6 @@ function program(module: binaryen.Module, statements: Stmt[]) {
     res.push(statement(module, stmt));
   }
 
-  if (res.length == 0) {
-    throw Error('No statements to compile.');
-  }
-
   return module.block(null, res, binaryen.none);
 }
 
@@ -50,6 +58,12 @@ function statement(module: binaryen.Module, stmt: Stmt) {
     case 'ExprStmt':
       let expr = expression(module, stmt.expression);
       return module.drop(expr);
+    case 'PrintStmt':
+      let value = expression(module, stmt.expression);
+      return module.call('print_i32', [value], binaryen.none);
+    default:
+      console.error(stmt);
+      throw Error('Unsupported statement.');
   }
 }
 
