@@ -47,24 +47,24 @@ function program(module: binaryen.Module, statements: Stmt[]) {
   for (let stmt of statements) {
     // console.log(stmt);
     // console.log('---');
-    res.push(statement(module, stmt));
+    res.push(compileStatement(module, stmt));
   }
 
   return module.block(null, res, binaryen.none);
 }
 
-function statement(module: binaryen.Module, stmt: Stmt): binaryen.ExpressionRef {
+function compileStatement(module: binaryen.Module, stmt: Stmt): binaryen.ExpressionRef {
   switch (stmt.type) {
     case 'ExprStmt': {
-      let expr = expression(module, stmt.expression);
+      let expr = compileExpression(module, stmt.expression);
       return module.drop(expr);
     }
     case 'PrintStmt': {
-      let expr = expression(module, stmt.expression);
+      let expr = compileExpression(module, stmt.expression);
       return module.call('print_i32', [expr], binaryen.none);
     }
     case 'VariableStmt': {
-      let expr = expression(module, stmt.initializer);
+      let expr = compileExpression(module, stmt.initializer);
       module.addGlobal(stmt.name.lexeme, binaryen.i32, true, expr);
       return module.nop();
     }
@@ -80,7 +80,7 @@ function statement(module: binaryen.Module, stmt: Stmt): binaryen.ExpressionRef 
   }
 }
 
-function expression(module: binaryen.Module, expression: Expr): number {
+function compileExpression(module: binaryen.Module, expression: Expr): number {
   // console.log(expression);
   switch (expression.type) {
     case 'BinaryExpr':
@@ -89,6 +89,8 @@ function expression(module: binaryen.Module, expression: Expr): number {
       return module.i32.const(expression.value);
     case 'VariableExpr':
       return module.global.get(expression.name.lexeme, binaryen.i32);
+    case 'GroupingExpr':
+      return compileExpression(module, expression.expression);
     default:
       console.error(expression.type);
       throw Error('Unsupported ast type.');
@@ -97,8 +99,8 @@ function expression(module: binaryen.Module, expression: Expr): number {
 
 // A number like 5517120 is returned by this function - which is not the result value of performing the addition. Could be something related to Wasm internal
 function binaryExpression(module: binaryen.Module, ast: BinaryExpr): number {
-  const left = expression(module, ast.left);
-  const right = expression(module, ast.right);
+  const left = compileExpression(module, ast.left);
+  const right = compileExpression(module, ast.right);
 
   switch (ast.operator.type) {
     case TokenType.PLUS:

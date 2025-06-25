@@ -120,11 +120,17 @@ function unary(): Expr {
   return primary();
 }
 
-function primary(): LiteralExpr | VariableExpr {
+function primary(): Expr {
   if (match(TokenType.INTEGER)) {
     return { value: previous().literal as number, type: 'LiteralExpr' };
-  } else if (match(TokenType.IDENTIFER)) {
+  }
+  if (match(TokenType.IDENTIFER)) {
     return { name: previous(), type: 'VariableExpr' };
+  }
+  if (match(TokenType.LEFT_PAREN)) {
+    let expr = expression();
+    consume(TokenType.RIGHT_PAREN, "Expect ')' after expression.");
+    return { expression: expr, type: 'GroupingExpr' };
   }
   console.error(peek());
   throw new Error('Bad literal expression.');
