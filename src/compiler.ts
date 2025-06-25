@@ -4,10 +4,6 @@ import TokenType from './TokenType';
 import type { Stmt } from './Stmt';
 
 export default function compile(statements: Stmt[]) {
-  // console.log(JSON.stringify(statements));
-  // console.log('yoooooooooooooo');
-  // return;
-
   const module = new binaryen.Module();
   const body = program(module, statements);
 
@@ -72,6 +68,12 @@ function compileStatement(module: binaryen.Module, stmt: Stmt): binaryen.Express
       // Is there no difference between the way a program is compiled and a block is? Maybe later once we get to functions?
       let statements = stmt.statements;
       return program(module, statements);
+    }
+    case 'IfStmt': {
+      let condition = compileExpression(module, stmt.condition);
+      let thenBranch = compileStatement(module, stmt.thenBranch);
+      let elseBranch = compileStatement(module, stmt.elseBranch);
+      return module.if(condition, thenBranch, elseBranch);
     }
     default: {
       console.error(stmt);

@@ -1,5 +1,5 @@
 import type { BinaryExpr, Expr, LiteralExpr, UnaryExpr, VariableExpr } from './Expr';
-import type { BlockStmt, ExprStmt, PrintStmt, Stmt, VariableStmt } from './Stmt';
+import type { BlockStmt, ExprStmt, IfStmt, PrintStmt, Stmt, VariableStmt } from './Stmt';
 import type Token from './Token';
 import TokenType from './TokenType';
 
@@ -14,17 +14,21 @@ export default function parse(t: Token[]) {
     statements.push(statement());
   }
 
-  console.log(JSON.stringify(statements));
   return statements;
 }
 
 function statement() {
   if (match(TokenType.PRINT)) {
     return printStatement();
-  } else if (match(TokenType.LET)) {
+  }
+  if (match(TokenType.LET)) {
     return variableStatement();
-  } else if (match(TokenType.LEFT_BRACE)) {
+  }
+  if (match(TokenType.LEFT_BRACE)) {
     return blockStatement();
+  }
+  if (match(TokenType.IF)) {
+    return ifStatement();
   }
 
   return expressionStatement();
@@ -53,6 +57,19 @@ function blockStatement(): BlockStmt {
 
   consume(TokenType.RIGHT_BRACE, "Expect '}' after block.");
   return { type: 'BlockStmt', statements };
+}
+
+function ifStatement(): IfStmt {
+  consume(TokenType.LEFT_PAREN, "Expect '(' after 'if'.");
+  let condition = expression();
+  consume(TokenType.RIGHT_PAREN, "Expect ')' after if condition.");
+
+  let thenBranch = statement();
+  // Compulsory else condition after if, revisit later and make it optional
+  consume(TokenType.ELSE, "Expect 'else' after 'if' block.");
+  let elseBranch = statement();
+
+  return { condition, thenBranch, elseBranch, type: 'IfStmt' };
 }
 
 function expressionStatement(): ExprStmt {
