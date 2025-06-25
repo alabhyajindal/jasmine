@@ -3,6 +3,7 @@ statement   → varStmt | exprStmt | printStmt ;
 varStmt     → "let" IDENTIFIER "=" expression "\n" ;
 exprStmt    → expression "\n" ;
 printStmt   → "print" expression "\n" ;
+block       → "{" statement* "}" ;
 
 
 expression  → equality ;
@@ -11,4 +12,4 @@ comparison  → term ( ( ">" | ">=" | "<" | "<=" ) term )* ;
 term        → factor ( ( "+" | "-" ) factor )* ;
 factor      → unary ( ( "/" | "*" ) unary )* ;
 unary       → ( "!" | "-" ) unary | primary ;
-primary     → NUMBER | IDENTIFIER ;
+primary     → NUMBER | IDENTIFIER | "(" expression ")" ;

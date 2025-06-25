@@ -116,6 +116,8 @@ function binaryExpression(module: binaryen.Module, ast: BinaryExpr): number {
       return module.i32.div_s(left, right);
     case TokenType.STAR:
       return module.i32.mul(left, right);
+    case TokenType.LESS:
+      return module.i32.lt_s(left, right);
     default:
       console.error(ast.operator);
       throw Error(`Unsupported binary operator.`);
