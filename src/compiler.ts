@@ -61,6 +61,11 @@ function statement(module: binaryen.Module, stmt: Stmt) {
     case 'PrintStmt':
       let value = expression(module, stmt.expression);
       return module.call('print_i32', [value], binaryen.none);
+    case 'VariableStmt':
+      console.log(stmt);
+      let initializer = expression(module, stmt.initializer);
+      module.addGlobal(stmt.name.lexeme, binaryen.i32, true, initializer);
+      return module.nop();
     default:
       console.error(stmt);
       throw Error('Unsupported statement.');
@@ -74,6 +79,8 @@ function expression(module: binaryen.Module, expression: Expr): number {
       return binaryExpression(module, expression);
     case 'LiteralExpr':
       return module.i32.const(expression.value);
+    case 'VariableExpr':
+      return module.global.get(expression.name.lexeme, binaryen.i32);
     default:
       console.error(expression.type);
       throw Error('Unsupported ast type.');

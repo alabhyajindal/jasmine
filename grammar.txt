@@ -1,6 +1,6 @@
 program     → statement* EOF ;
-statement   → varDecl | exprStmt | printStmt ;
-varDecl     → "let" IDENTIFIER "=" expression "\n" ;
+statement   → varStmt | exprStmt | printStmt ;
+varStmt     → "let" IDENTIFIER "=" expression "\n" ;
 exprStmt    → expression "\n" ;
 printStmt   → "print" expression "\n" ;
 

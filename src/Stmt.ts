@@ -14,7 +14,7 @@ export interface PrintStmt {
 }
 
 export interface VariableStmt {
-  type: 'VarStmt';
+  type: 'VariableStmt';
   name: Token;
   initializer: Expr;
 }

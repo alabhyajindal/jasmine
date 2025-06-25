@@ -34,8 +34,8 @@ function run(source: string) {
   // console.log(tokens)
   // return;
   const statements = parse(tokens);
-  console.log(statements);
-  return
+  // console.log(statements);
+  // return
 
   const wasmBinary = compile(statements);
 

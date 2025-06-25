@@ -22,7 +22,7 @@ function statement() {
   if (match(TokenType.PRINT)) {
     return printStatement();
   } else if (match(TokenType.LET)) {
-    return varDeclaration();
+    return variableStatement();
   }
 
   return expressionStatement();
@@ -34,12 +34,12 @@ function printStatement(): PrintStmt {
   return { expression: value, type: 'PrintStmt' };
 }
 
-function varDeclaration(): VariableStmt {
+function variableStatement(): VariableStmt {
   let name = consume(TokenType.IDENTIFER, 'Expect variable name.');
   consume(TokenType.EQUAL, 'Expect equal sign.');
   let initializer = expression();
   consume(TokenType.NEWLINE, "Expected '\n' after expression.");
-  return { name, initializer, type: 'VarStmt' };
+  return { name, initializer, type: 'VariableStmt' };
 }
 
 function expressionStatement(): ExprStmt {
@@ -156,7 +156,7 @@ function consume(type: TokenType, msg: string) {
   reportError(peek(), msg);
 }
 
-function reportError(token: Token, msg: string) {
+function reportError(token: Token, msg: string): never {
   console.error(`[line ${token.line} Error at ${token.lexeme}: ${msg}`);
   throw Error();
 }
