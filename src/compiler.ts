@@ -7,10 +7,6 @@ export default function compile(statements: Stmt[]) {
   const module = new binaryen.Module();
   const body = program(module, statements);
 
-  if (!body) {
-    throw Error('Empty body.');
-  }
-
   // Import for print function
   module.addFunctionImport(
     'print_i32',
@@ -123,6 +119,10 @@ function binaryExpression(module: binaryen.Module, expression: BinaryExpr): bina
       return module.i32.gt_s(left, right);
     case TokenType.GREATER_EQUAL:
       return module.i32.ge_s(left, right);
+    case TokenType.EQUAL_EQUAL:
+      return module.i32.eq(left, right);
+    case TokenType.BANG_EQUAL:
+      return module.i32.ne(left, right);
     default:
       console.error(expression.operator);
       throw Error(`Unsupported binary operator.`);
