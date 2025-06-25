@@ -1,5 +1,5 @@
 import binaryen from 'binaryen';
-import type { BinaryExpr, Expr } from './Expr';
+import type { BinaryExpr, Expr, UnaryExpr } from './Expr';
 import TokenType from './TokenType';
 import type { Stmt } from './Stmt';
 
@@ -66,6 +66,7 @@ function compileStatement(module: binaryen.Module, stmt: Stmt): binaryen.Express
     }
     case 'BlockStmt': {
       // Is there no difference between the way a program is compiled and a block is? Maybe later once we get to functions?
+      // They do differ - a program always returns none type - but a block may have a return statement and thus a return type when it's part of a function
       let statements = stmt.statements;
       return program(module, statements);
     }
@@ -93,8 +94,10 @@ function compileExpression(module: binaryen.Module, expression: Expr): number {
       return module.global.get(expression.name.lexeme, binaryen.i32);
     case 'GroupingExpr':
       return compileExpression(module, expression.expression);
+    case 'UnaryExpr':
+      return unaryExpression(module, expression);
     default:
-      console.error(expression.type);
+      console.error(expression);
       throw Error('Unsupported ast type.');
   }
 }
@@ -115,6 +118,18 @@ function binaryExpression(module: binaryen.Module, ast: BinaryExpr): number {
       return module.i32.mul(left, right);
     default:
       console.error(ast.operator);
-      throw Error(`Unsupported operator.`);
+      throw Error(`Unsupported binary operator.`);
+  }
+}
+
+function unaryExpression(module: binaryen.Module, ast: UnaryExpr) {
+  switch (ast.operator.type) {
+    case TokenType.MINUS: {
+      let expr = compileExpression(module, ast.right);
+      return module.i32.sub(module.i32.const(0), expr);
+    }
+    default:
+      console.error(ast.operator);
+      throw Error(`Unsupported binary operator.`);
   }
 }

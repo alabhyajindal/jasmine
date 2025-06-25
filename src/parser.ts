@@ -131,7 +131,7 @@ function unary(): Expr {
   if (match(TokenType.BANG, TokenType.MINUS)) {
     let operator = previous();
     let right = unary();
-    return { operator, right } as UnaryExpr;
+    return { operator, right, type: 'UnaryExpr' };
   }
 
   return primary();
