@@ -138,6 +138,12 @@ function unary(): Expr {
 }
 
 function primary(): Expr {
+  if (match(TokenType.TRUE)) {
+    return { value: true, type: 'LiteralExpr' };
+  }
+  if (match(TokenType.FALSE)) {
+    return { value: false, type: 'LiteralExpr' };
+  }
   if (match(TokenType.INTEGER)) {
     return { value: previous().literal as number, type: 'LiteralExpr' };
   }

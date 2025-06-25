@@ -16,7 +16,7 @@ export interface GroupingExpr {
 
 export interface LiteralExpr {
   type: 'LiteralExpr';
-  value: number;
+  value: number | boolean;
 }
 
 export interface UnaryExpr {

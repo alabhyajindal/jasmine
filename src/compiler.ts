@@ -1,5 +1,5 @@
 import binaryen from 'binaryen';
-import type { BinaryExpr, Expr, UnaryExpr } from './Expr';
+import type { BinaryExpr, Expr, LiteralExpr, UnaryExpr } from './Expr';
 import TokenType from './TokenType';
 import type { Stmt } from './Stmt';
 
@@ -89,7 +89,7 @@ function compileExpression(module: binaryen.Module, expression: Expr): number {
     case 'BinaryExpr':
       return binaryExpression(module, expression);
     case 'LiteralExpr':
-      return module.i32.const(expression.value);
+      return literalExpression(module, expression);
     case 'VariableExpr':
       return module.global.get(expression.name.lexeme, binaryen.i32);
     case 'GroupingExpr':
@@ -121,6 +121,19 @@ function binaryExpression(module: binaryen.Module, ast: BinaryExpr): number {
     default:
       console.error(ast.operator);
       throw Error(`Unsupported binary operator.`);
+  }
+}
+
+function literalExpression(module: binaryen.Module, expression: LiteralExpr) {
+  switch (typeof expression.value) {
+    case 'number':
+      return module.i32.const(expression.value);
+    case 'boolean':
+      if (expression.value == true) {
+        return module.i32.const(1);
+      } else if (expression.value == false) {
+        return module.i32.const(0);
+      }
   }
 }
 
