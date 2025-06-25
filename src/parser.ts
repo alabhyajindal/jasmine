@@ -65,9 +65,10 @@ function ifStatement(): IfStmt {
   consume(TokenType.RIGHT_PAREN, "Expect ')' after if condition.");
 
   let thenBranch = statement();
-  // Compulsory else condition after if, revisit later and make it optional
-  consume(TokenType.ELSE, "Expect 'else' after 'if' block.");
-  let elseBranch = statement();
+  let elseBranch = null;
+  if (match(TokenType.ELSE)) {
+    elseBranch = statement();
+  }
 
   return { condition, thenBranch, elseBranch, type: 'IfStmt' };
 }

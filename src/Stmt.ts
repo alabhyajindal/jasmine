@@ -17,7 +17,7 @@ export interface IfStmt {
   type: 'IfStmt';
   condition: Expr;
   thenBranch: Stmt;
-  elseBranch: Stmt;
+  elseBranch: Stmt | null;
 }
 
 export interface PrintStmt {

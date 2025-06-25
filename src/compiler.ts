@@ -69,8 +69,12 @@ function compileStatement(module: binaryen.Module, stmt: Stmt): binaryen.Express
     case 'IfStmt': {
       let condition = compileExpression(module, stmt.condition);
       let thenBranch = compileStatement(module, stmt.thenBranch);
-      let elseBranch = compileStatement(module, stmt.elseBranch);
-      return module.if(condition, thenBranch, elseBranch);
+      if (stmt.elseBranch) {
+        let elseBranch = compileStatement(module, stmt.elseBranch);
+        return module.if(condition, thenBranch, elseBranch);
+      }
+
+      return module.if(condition, thenBranch);
     }
     default: {
       console.error(stmt);
