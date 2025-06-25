@@ -1,5 +1,5 @@
-import type Token from './Token';
-import TokenType from './TokenType';
+import type Token from './Token'
+import TokenType from './TokenType'
 
 const keywords: Record<string, TokenType> = {
   and: TokenType.AND,
@@ -13,171 +13,171 @@ const keywords: Record<string, TokenType> = {
   true: TokenType.TRUE,
   while: TokenType.WHILE,
   print: TokenType.PRINT,
-};
+}
 
 const types: Record<string, TokenType> = {
   i32: TokenType.i32,
-};
+}
 
-let start = 0;
-let current = 0;
-let line = 1;
-let tokens: Token[] = [];
-let source = '';
+let start = 0
+let current = 0
+let line = 1
+let tokens: Token[] = []
+let source = ''
 
 export default function scan(sourceText: string) {
-  source = sourceText;
+  source = sourceText
 
   while (!isAtEnd()) {
-    start = current;
-    scanToken();
+    start = current
+    scanToken()
   }
 
-  tokens.push({ type: TokenType.EOF, lexeme: '', literal: null, line });
-  return tokens;
+  tokens.push({ type: TokenType.EOF, lexeme: '', literal: null, line })
+  return tokens
 }
 
 function scanToken() {
-  let c = advance();
+  let c = advance()
   switch (c) {
     case '(':
-      addToken(TokenType.LEFT_PAREN);
-      break;
+      addToken(TokenType.LEFT_PAREN)
+      break
     case ')':
-      addToken(TokenType.RIGHT_PAREN);
-      break;
+      addToken(TokenType.RIGHT_PAREN)
+      break
     case '{':
-      addToken(TokenType.LEFT_BRACE);
+      addToken(TokenType.LEFT_BRACE)
       // Skip the initial newline after entering a block
-      if (peek() == '\n') advance();
-      break;
+      if (peek() == '\n') advance()
+      break
     case '}':
-      addToken(TokenType.RIGHT_BRACE);
-      break;
+      addToken(TokenType.RIGHT_BRACE)
+      break
     case ':':
-      addToken(TokenType.COLON);
-      break;
+      addToken(TokenType.COLON)
+      break
     case ',':
-      addToken(TokenType.COMMA);
-      break;
+      addToken(TokenType.COMMA)
+      break
     case '.':
-      addToken(TokenType.DOT);
-      break;
+      addToken(TokenType.DOT)
+      break
     case '-':
-      addToken(TokenType.MINUS);
-      break;
+      addToken(TokenType.MINUS)
+      break
     case '+':
-      addToken(TokenType.PLUS);
-      break;
+      addToken(TokenType.PLUS)
+      break
     case '*':
-      addToken(TokenType.STAR);
-      break;
+      addToken(TokenType.STAR)
+      break
     case '/':
-      addToken(TokenType.SLASH);
-      break;
+      addToken(TokenType.SLASH)
+      break
     case '!':
-      match('=') ? addToken(TokenType.BANG_EQUAL) : addToken(TokenType.BANG);
-      break;
+      match('=') ? addToken(TokenType.BANG_EQUAL) : addToken(TokenType.BANG)
+      break
     case '=':
-      match('=') ? addToken(TokenType.EQUAL_EQUAL) : addToken(TokenType.EQUAL);
-      break;
+      match('=') ? addToken(TokenType.EQUAL_EQUAL) : addToken(TokenType.EQUAL)
+      break
     case '<':
-      match('=') ? addToken(TokenType.LESS_EQUAL) : addToken(TokenType.LESS);
-      break;
+      match('=') ? addToken(TokenType.LESS_EQUAL) : addToken(TokenType.LESS)
+      break
     case '>':
-      match('=') ? addToken(TokenType.GREATER_EQUAL) : addToken(TokenType.GREATER);
-      break;
+      match('=') ? addToken(TokenType.GREATER_EQUAL) : addToken(TokenType.GREATER)
+      break
     case '#':
       while (peek() != '\n' && !isAtEnd()) {
-        advance();
+        advance()
       }
       // Advance again to skip the new line character
-      advance();
-      line++;
-      break;
+      advance()
+      line++
+      break
     case ' ':
     case '\r':
     case '\t':
-      break;
+      break
     case '\n':
-      addToken(TokenType.NEWLINE);
-      line++;
-      break;
+      addToken(TokenType.NEWLINE)
+      line++
+      break
     default:
       if (isDigit(c)) {
-        number();
+        number()
         // Identifiers must begin with a character
       } else if (isAlpha(c)) {
-        identifier();
+        identifier()
       } else {
-        console.error(c);
-        throw Error('Not implemented.');
+        console.error(c)
+        throw Error('Not implemented.')
       }
   }
 }
 
 function isAtEnd() {
-  return current >= source.length;
+  return current >= source.length
 }
 
 function advance() {
-  current++;
-  return source[current - 1]!;
+  current++
+  return source[current - 1]!
 }
 
 function addToken(type: TokenType, literal: Token['literal'] = null) {
-  let lexeme = source.substring(start, current);
-  tokens.push({ type, lexeme, literal, line } as Token);
+  let lexeme = source.substring(start, current)
+  tokens.push({ type, lexeme, literal, line } as Token)
 }
 
 function match(expected: string) {
   if (isAtEnd()) {
-    return false;
+    return false
   }
   if (source[current] != expected) {
-    return false;
+    return false
   }
 
-  current++;
-  return true;
+  current++
+  return true
 }
 
 function peek() {
   if (isAtEnd()) {
-    return '\0';
+    return '\0'
   }
-  return source[current]!;
+  return source[current]!
 }
 
 function number() {
   while (isDigit(peek())) {
-    advance();
+    advance()
   }
 
-  let value = Number.parseInt(source.substring(start, current));
-  addToken(TokenType.INTEGER, value);
+  let value = Number.parseInt(source.substring(start, current))
+  addToken(TokenType.INTEGER, value)
 }
 
 // Handles keywords, types and identifiers
 function identifier() {
   while (isUnderscore(peek()) || isAlpha(peek()) || isDigit(peek())) {
-    advance();
+    advance()
   }
 
-  let text = source.substring(start, current);
-  let type = keywords[text] || types[text] || TokenType.IDENTIFER;
+  let text = source.substring(start, current)
+  let type = keywords[text] || types[text] || TokenType.IDENTIFER
 
-  addToken(type);
+  addToken(type)
 }
 
 function isDigit(char: string) {
-  return /\d/.test(char);
+  return /\d/.test(char)
 }
 
 function isAlpha(char: string) {
-  return /[A-Z]|[a-z]/.test(char);
+  return /[A-Z]|[a-z]/.test(char)
 }
 
 function isUnderscore(char: string) {
-  return /\_/.test(char);
+  return /\_/.test(char)
 }

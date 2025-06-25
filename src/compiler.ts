@@ -1,11 +1,11 @@
-import binaryen from 'binaryen';
-import type { BinaryExpr, Expr, LiteralExpr, UnaryExpr } from './Expr';
-import TokenType from './TokenType';
-import type { Stmt } from './Stmt';
+import binaryen from 'binaryen'
+import type { BinaryExpr, Expr, LiteralExpr, UnaryExpr } from './Expr'
+import TokenType from './TokenType'
+import type { Stmt } from './Stmt'
 
 export default function compile(statements: Stmt[]) {
-  const module = new binaryen.Module();
-  const body = program(module, statements);
+  const module = new binaryen.Module()
+  const body = program(module, statements)
 
   // Import for print function
   module.addFunctionImport(
@@ -14,10 +14,10 @@ export default function compile(statements: Stmt[]) {
     'i32',
     binaryen.createType([binaryen.i32]),
     binaryen.none
-  );
+  )
 
-  module.addFunction('main', binaryen.createType([]), binaryen.none, [], body);
-  module.addFunctionExport('main', 'main');
+  module.addFunction('main', binaryen.createType([]), binaryen.none, [], body)
+  module.addFunctionExport('main', 'main')
 
   // Wasm text before validation to view the compiled output
   // const wasmText = module.emitText();
@@ -25,60 +25,60 @@ export default function compile(statements: Stmt[]) {
 
   // Validate the module
   if (!module.validate()) {
-    throw Error('Validation error.');
+    throw Error('Validation error.')
   }
 
   // Emitting WebAssembly
-  const wasmBinary = module.emitBinary();
+  const wasmBinary = module.emitBinary()
 
-  return wasmBinary;
+  return wasmBinary
 }
 
 function program(module: binaryen.Module, statements: Stmt[]) {
-  let res = [];
+  let res = []
   for (let stmt of statements) {
     // console.log(stmt);
     // console.log('---');
-    res.push(compileStatement(module, stmt));
+    res.push(compileStatement(module, stmt))
   }
 
-  return module.block(null, res, binaryen.none);
+  return module.block(null, res, binaryen.none)
 }
 
 function compileStatement(module: binaryen.Module, stmt: Stmt): binaryen.ExpressionRef {
   switch (stmt.type) {
     case 'ExprStmt': {
-      let expr = compileExpression(module, stmt.expression);
-      return module.drop(expr);
+      let expr = compileExpression(module, stmt.expression)
+      return module.drop(expr)
     }
     case 'PrintStmt': {
-      let expr = compileExpression(module, stmt.expression);
-      return module.call('print_i32', [expr], binaryen.none);
+      let expr = compileExpression(module, stmt.expression)
+      return module.call('print_i32', [expr], binaryen.none)
     }
     case 'VariableStmt': {
-      let expr = compileExpression(module, stmt.initializer);
-      module.addGlobal(stmt.name.lexeme, binaryen.i32, true, expr);
-      return module.nop();
+      let expr = compileExpression(module, stmt.initializer)
+      module.addGlobal(stmt.name.lexeme, binaryen.i32, true, expr)
+      return module.nop()
     }
     case 'BlockStmt': {
       // Is there no difference between the way a program is compiled and a block is? Maybe later once we get to functions?
       // They do differ - a program always returns none type - but a block may have a return statement and thus a return type when it's part of a function
-      let statements = stmt.statements;
-      return program(module, statements);
+      let statements = stmt.statements
+      return program(module, statements)
     }
     case 'IfStmt': {
-      let condition = compileExpression(module, stmt.condition);
-      let thenBranch = compileStatement(module, stmt.thenBranch);
+      let condition = compileExpression(module, stmt.condition)
+      let thenBranch = compileStatement(module, stmt.thenBranch)
       if (stmt.elseBranch) {
-        let elseBranch = compileStatement(module, stmt.elseBranch);
-        return module.if(condition, thenBranch, elseBranch);
+        let elseBranch = compileStatement(module, stmt.elseBranch)
+        return module.if(condition, thenBranch, elseBranch)
       }
 
-      return module.if(condition, thenBranch);
+      return module.if(condition, thenBranch)
     }
     default: {
-      console.error(stmt);
-      throw Error('Unsupported statement.');
+      console.error(stmt)
+      throw Error('Unsupported statement.')
     }
   }
 }
@@ -86,50 +86,50 @@ function compileStatement(module: binaryen.Module, stmt: Stmt): binaryen.Express
 function compileExpression(module: binaryen.Module, expression: Expr): binaryen.ExpressionRef {
   switch (expression.type) {
     case 'BinaryExpr':
-      return binaryExpression(module, expression);
+      return binaryExpression(module, expression)
     case 'LiteralExpr':
-      return literalExpression(module, expression);
+      return literalExpression(module, expression)
     case 'VariableExpr':
-      return module.global.get(expression.name.lexeme, binaryen.i32);
+      return module.global.get(expression.name.lexeme, binaryen.i32)
     case 'GroupingExpr':
-      return compileExpression(module, expression.expression);
+      return compileExpression(module, expression.expression)
     case 'UnaryExpr':
-      return unaryExpression(module, expression);
+      return unaryExpression(module, expression)
     default:
-      console.error(expression);
-      throw Error('Unsupported ast type.');
+      console.error(expression)
+      throw Error('Unsupported ast type.')
   }
 }
 
 // A number like 5517120 is returned by this function - which is not the result value of performing the addition. Could be something related to Wasm internal
 function binaryExpression(module: binaryen.Module, expression: BinaryExpr): binaryen.ExpressionRef {
-  const left = compileExpression(module, expression.left);
-  const right = compileExpression(module, expression.right);
+  const left = compileExpression(module, expression.left)
+  const right = compileExpression(module, expression.right)
 
   switch (expression.operator.type) {
     case TokenType.PLUS:
-      return module.i32.add(left, right);
+      return module.i32.add(left, right)
     case TokenType.MINUS:
-      return module.i32.sub(left, right);
+      return module.i32.sub(left, right)
     case TokenType.SLASH:
-      return module.i32.div_s(left, right);
+      return module.i32.div_s(left, right)
     case TokenType.STAR:
-      return module.i32.mul(left, right);
+      return module.i32.mul(left, right)
     case TokenType.LESS:
-      return module.i32.lt_s(left, right);
+      return module.i32.lt_s(left, right)
     case TokenType.LESS_EQUAL:
-      return module.i32.le_s(left, right);
+      return module.i32.le_s(left, right)
     case TokenType.GREATER:
-      return module.i32.gt_s(left, right);
+      return module.i32.gt_s(left, right)
     case TokenType.GREATER_EQUAL:
-      return module.i32.ge_s(left, right);
+      return module.i32.ge_s(left, right)
     case TokenType.EQUAL_EQUAL:
-      return module.i32.eq(left, right);
+      return module.i32.eq(left, right)
     case TokenType.BANG_EQUAL:
-      return module.i32.ne(left, right);
+      return module.i32.ne(left, right)
     default:
-      console.error(expression.operator);
-      throw Error(`Unsupported binary operator.`);
+      console.error(expression.operator)
+      throw Error(`Unsupported binary operator.`)
   }
 }
 
@@ -139,23 +139,23 @@ function literalExpression(
 ): binaryen.ExpressionRef {
   switch (typeof expression.value) {
     case 'number':
-      return module.i32.const(expression.value);
+      return module.i32.const(expression.value)
     case 'boolean':
-      return module.i32.const(expression.value ? 1 : 0);
+      return module.i32.const(expression.value ? 1 : 0)
     default:
-      console.error(expression);
-      throw Error('Unsupported literal expression.');
+      console.error(expression)
+      throw Error('Unsupported literal expression.')
   }
 }
 
 function unaryExpression(module: binaryen.Module, expression: UnaryExpr): binaryen.ExpressionRef {
   switch (expression.operator.type) {
     case TokenType.MINUS: {
-      let expr = compileExpression(module, expression.right);
-      return module.i32.sub(module.i32.const(0), expr);
+      let expr = compileExpression(module, expression.right)
+      return module.i32.sub(module.i32.const(0), expr)
     }
     default:
-      console.error(expression.operator);
-      throw Error(`Unsupported binary operator.`);
+      console.error(expression.operator)
+      throw Error(`Unsupported binary operator.`)
   }
 }
