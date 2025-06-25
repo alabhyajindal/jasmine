@@ -34,7 +34,8 @@ function run(source: string) {
   // console.log(tokens)
   // return;
   const statements = parse(tokens);
-  // console.log(statements);
+  console.log(statements);
+  return
 
   const wasmBinary = compile(statements);
 
@@ -44,13 +45,13 @@ function run(source: string) {
 
 
   // Define the imports that WebAssembly expects
-const imports = {
-  console: {
-    i32: (value: number) => {
-      console.log(value);
+  const imports = {
+    console: {
+      i32: (value: number) => {
+        console.log(value);
+      },
     },
-  },
-};
+  };
   
   // Example usage with the WebAssembly API
   const compiled = new WebAssembly.Module(wasmBinary);

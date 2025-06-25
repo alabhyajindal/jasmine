@@ -1,6 +1,7 @@
 import type { Expr } from './Expr';
+import type Token from './Token';
 
-export type Stmt = ExprStmt | PrintStmt;
+export type Stmt = ExprStmt | PrintStmt | VariableStmt;
 
 export interface ExprStmt {
   type: 'ExprStmt';
@@ -10,4 +11,10 @@ export interface ExprStmt {
 export interface PrintStmt {
   type: 'PrintStmt';
   expression: Expr;
+}
+
+export interface VariableStmt {
+  type: 'VarStmt';
+  name: Token;
+  initializer: Expr;
 }

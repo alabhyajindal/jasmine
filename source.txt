@@ -1,1 +1,1 @@
-print 20 + 22
+let foo = 22

@@ -1,6 +1,6 @@
 import type Token from './Token';
 
-export type Expr = LiteralExpr | BinaryExpr | UnaryExpr;
+export type Expr = LiteralExpr | BinaryExpr | UnaryExpr | VariableExpr;
 
 export interface BinaryExpr {
   type: 'BinaryExpr';
@@ -18,4 +18,9 @@ export interface UnaryExpr {
   type: 'UnaryExpr';
   operator: Token;
   right: Expr;
+}
+
+export interface VariableExpr {
+  type: 'VariableExpr';
+  name: Token;
 }

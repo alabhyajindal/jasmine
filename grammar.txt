@@ -1,6 +1,8 @@
 program     → statement* EOF ;
-statement   → exprStmt ;
+statement   → varDecl | exprStmt | printStmt ;
+varDecl     → "let" IDENTIFIER "=" expression "\n" ;
 exprStmt    → expression "\n" ;
+printStmt   → "print" expression "\n" ;
 
 
 expression  → equality ;
@@ -9,4 +11,4 @@ comparison  → term ( ( ">" | ">=" | "<" | "<=" ) term )* ;
 term        → factor ( ( "+" | "-" ) factor )* ;
 factor      → unary ( ( "/" | "*" ) unary )* ;
 unary       → ( "!" | "-" ) unary | primary ;
-primary     → NUMBER ;
+primary     → NUMBER | IDENTIFIER ;

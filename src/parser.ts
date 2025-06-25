@@ -1,5 +1,5 @@
-import type { BinaryExpr, Expr, LiteralExpr, UnaryExpr } from './Expr';
-import type { ExprStmt, PrintStmt, Stmt } from './Stmt';
+import type { BinaryExpr, Expr, LiteralExpr, UnaryExpr, VariableExpr } from './Expr';
+import type { ExprStmt, PrintStmt, Stmt, VariableStmt } from './Stmt';
 import type Token from './Token';
 import TokenType from './TokenType';
 
@@ -21,6 +21,8 @@ export default function parse(t: Token[]) {
 function statement() {
   if (match(TokenType.PRINT)) {
     return printStatement();
+  } else if (match(TokenType.LET)) {
+    return varDeclaration();
   }
 
   return expressionStatement();
@@ -30,6 +32,14 @@ function printStatement(): PrintStmt {
   let value = expression();
   consume(TokenType.NEWLINE, "Expected '\n' after expression.");
   return { expression: value, type: 'PrintStmt' };
+}
+
+function varDeclaration(): VariableStmt {
+  let name = consume(TokenType.IDENTIFER, 'Expect variable name.');
+  consume(TokenType.EQUAL, 'Expect equal sign.');
+  let initializer = expression();
+  consume(TokenType.NEWLINE, "Expected '\n' after expression.");
+  return { name, initializer, type: 'VarStmt' };
 }
 
 function expressionStatement(): ExprStmt {
@@ -87,7 +97,7 @@ function factor(): Expr {
   return expr;
 }
 
-function unary(): UnaryExpr | LiteralExpr {
+function unary(): Expr {
   if (match(TokenType.BANG, TokenType.MINUS)) {
     let operator = previous();
     let right = unary();
@@ -97,9 +107,11 @@ function unary(): UnaryExpr | LiteralExpr {
   return primary();
 }
 
-function primary(): LiteralExpr {
+function primary(): LiteralExpr | VariableExpr {
   if (match(TokenType.INTEGER)) {
     return { value: previous().literal as number, type: 'LiteralExpr' };
+  } else if (match(TokenType.IDENTIFER)) {
+    return { name: previous(), type: 'VariableExpr' };
   }
   throw new Error('Bad literal expression.');
 }
@@ -146,4 +158,5 @@ function consume(type: TokenType, msg: string) {
 
 function reportError(token: Token, msg: string) {
   console.error(`[line ${token.line} Error at ${token.lexeme}: ${msg}`);
+  throw Error();
 }

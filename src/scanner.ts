@@ -108,7 +108,8 @@ function scanToken() {
       } else if (isAlpha(c)) {
         identifier();
       } else {
-        throw new Error(`not implemented: ${c}`);
+        console.error(c);
+        throw Error('Not implemented.');
       }
   }
 }
