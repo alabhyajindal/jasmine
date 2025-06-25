@@ -3,7 +3,8 @@ import parse from './parser';
 import compile from './compiler';
 import sphereSource from '../source.txt' with {type: 'text'}; // Included to reload Bun when the source text changes
 
-console.log(sphereSource)
+// console.log(sphereSource)
+let _ = sphereSource
 
 const args = Bun.argv;
 
