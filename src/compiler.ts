@@ -55,20 +55,23 @@ function program(module: binaryen.Module, statements: Stmt[]) {
 
 function statement(module: binaryen.Module, stmt: Stmt) {
   switch (stmt.type) {
-    case 'ExprStmt':
+    case 'ExprStmt': {
       let expr = expression(module, stmt.expression);
       return module.drop(expr);
-    case 'PrintStmt':
-      let value = expression(module, stmt.expression);
-      return module.call('print_i32', [value], binaryen.none);
-    case 'VariableStmt':
-      console.log(stmt);
-      let initializer = expression(module, stmt.initializer);
-      module.addGlobal(stmt.name.lexeme, binaryen.i32, true, initializer);
+    }
+    case 'PrintStmt': {
+      let expr = expression(module, stmt.expression);
+      return module.call('print_i32', [expr], binaryen.none);
+    }
+    case 'VariableStmt': {
+      let expr = expression(module, stmt.initializer);
+      module.addGlobal(stmt.name.lexeme, binaryen.i32, true, expr);
       return module.nop();
-    default:
+    }
+    default: {
       console.error(stmt);
       throw Error('Unsupported statement.');
+    }
   }
 }
 
