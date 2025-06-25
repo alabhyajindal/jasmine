@@ -48,7 +48,6 @@ function blockStatement(): BlockStmt {
   let statements = [];
 
   while (!check(TokenType.RIGHT_BRACE)) {
-    consume(TokenType.NEWLINE, 'Expect newline after block.');
     statements.push(statement());
   }
 

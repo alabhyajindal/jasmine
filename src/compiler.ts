@@ -53,7 +53,7 @@ function program(module: binaryen.Module, statements: Stmt[]) {
   return module.block(null, res, binaryen.none);
 }
 
-function statement(module: binaryen.Module, stmt: Stmt) {
+function statement(module: binaryen.Module, stmt: Stmt): binaryen.ExpressionRef {
   switch (stmt.type) {
     case 'ExprStmt': {
       let expr = expression(module, stmt.expression);
@@ -69,10 +69,9 @@ function statement(module: binaryen.Module, stmt: Stmt) {
       return module.nop();
     }
     case 'BlockStmt': {
+      // Is there no difference between the way a program is compiled and a block is? Maybe later once we get to functions?
       let statements = stmt.statements;
-      for (let stmt of statements) {
-        console.log(stmt);
-      }
+      return program(module, statements);
     }
     default: {
       console.error(stmt);
