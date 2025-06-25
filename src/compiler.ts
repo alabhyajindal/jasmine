@@ -83,8 +83,7 @@ function compileStatement(module: binaryen.Module, stmt: Stmt): binaryen.Express
   }
 }
 
-function compileExpression(module: binaryen.Module, expression: Expr): number {
-  // console.log(expression);
+function compileExpression(module: binaryen.Module, expression: Expr): binaryen.ExpressionRef {
   switch (expression.type) {
     case 'BinaryExpr':
       return binaryExpression(module, expression);
@@ -103,7 +102,7 @@ function compileExpression(module: binaryen.Module, expression: Expr): number {
 }
 
 // A number like 5517120 is returned by this function - which is not the result value of performing the addition. Could be something related to Wasm internal
-function binaryExpression(module: binaryen.Module, expression: BinaryExpr): number {
+function binaryExpression(module: binaryen.Module, expression: BinaryExpr): binaryen.ExpressionRef {
   const left = compileExpression(module, expression.left);
   const right = compileExpression(module, expression.right);
 
@@ -118,30 +117,34 @@ function binaryExpression(module: binaryen.Module, expression: BinaryExpr): numb
       return module.i32.mul(left, right);
     case TokenType.LESS:
       return module.i32.lt_s(left, right);
+    case TokenType.LESS_EQUAL:
+      return module.i32.le_s(left, right);
+    case TokenType.GREATER:
+      return module.i32.gt_s(left, right);
+    case TokenType.GREATER_EQUAL:
+      return module.i32.ge_s(left, right);
     default:
       console.error(expression.operator);
       throw Error(`Unsupported binary operator.`);
   }
 }
 
-function literalExpression(module: binaryen.Module, expression: LiteralExpr) {
+function literalExpression(
+  module: binaryen.Module,
+  expression: LiteralExpr
+): binaryen.ExpressionRef {
   switch (typeof expression.value) {
     case 'number':
       return module.i32.const(expression.value);
     case 'boolean':
-      if (expression.value == true) {
-        return module.i32.const(1);
-      } else if (expression.value == false) {
-        return module.i32.const(0);
-      }
-      break;
+      return module.i32.const(expression.value ? 1 : 0);
     default:
       console.error(expression);
       throw Error('Unsupported literal expression.');
   }
 }
 
-function unaryExpression(module: binaryen.Module, expression: UnaryExpr) {
+function unaryExpression(module: binaryen.Module, expression: UnaryExpr): binaryen.ExpressionRef {
   switch (expression.operator.type) {
     case TokenType.MINUS: {
       let expr = compileExpression(module, expression.right);
