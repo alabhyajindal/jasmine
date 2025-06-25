@@ -68,6 +68,12 @@ function statement(module: binaryen.Module, stmt: Stmt) {
       module.addGlobal(stmt.name.lexeme, binaryen.i32, true, expr);
       return module.nop();
     }
+    case 'BlockStmt': {
+      let statements = stmt.statements;
+      for (let stmt of statements) {
+        console.log(stmt);
+      }
+    }
     default: {
       console.error(stmt);
       throw Error('Unsupported statement.');

@@ -1,5 +1,5 @@
 import type { BinaryExpr, Expr, LiteralExpr, UnaryExpr, VariableExpr } from './Expr';
-import type { ExprStmt, PrintStmt, Stmt, VariableStmt } from './Stmt';
+import type { BlockStmt, ExprStmt, PrintStmt, Stmt, VariableStmt } from './Stmt';
 import type Token from './Token';
 import TokenType from './TokenType';
 
@@ -14,7 +14,7 @@ export default function parse(t: Token[]) {
     statements.push(statement());
   }
 
-  // console.log(JSON.stringify(statements));
+  console.log(JSON.stringify(statements));
   return statements;
 }
 
@@ -23,6 +23,8 @@ function statement() {
     return printStatement();
   } else if (match(TokenType.LET)) {
     return variableStatement();
+  } else if (match(TokenType.LEFT_BRACE)) {
+    return blockStatement();
   }
 
   return expressionStatement();
@@ -30,7 +32,7 @@ function statement() {
 
 function printStatement(): PrintStmt {
   let value = expression();
-  consume(TokenType.NEWLINE, "Expected '\n' after expression.");
+  consume(TokenType.NEWLINE, 'Expect newline after expression.');
   return { expression: value, type: 'PrintStmt' };
 }
 
@@ -38,13 +40,25 @@ function variableStatement(): VariableStmt {
   let name = consume(TokenType.IDENTIFER, 'Expect variable name.');
   consume(TokenType.EQUAL, 'Expect equal sign.');
   let initializer = expression();
-  consume(TokenType.NEWLINE, "Expected '\n' after expression.");
+  consume(TokenType.NEWLINE, 'Expect newline after expression.');
   return { name, initializer, type: 'VariableStmt' };
+}
+
+function blockStatement(): BlockStmt {
+  let statements = [];
+
+  while (!check(TokenType.RIGHT_BRACE)) {
+    consume(TokenType.NEWLINE, 'Expect newline after block.');
+    statements.push(statement());
+  }
+
+  consume(TokenType.RIGHT_BRACE, "Expect '}' after block.");
+  return { type: 'BlockStmt', statements };
 }
 
 function expressionStatement(): ExprStmt {
   let expr = expression();
-  consume(TokenType.NEWLINE, "Expected '\n' after expression.");
+  consume(TokenType.NEWLINE, 'Expect newline after expression.');
   return { expression: expr, type: 'ExprStmt' };
 }
 
@@ -113,6 +127,7 @@ function primary(): LiteralExpr | VariableExpr {
   } else if (match(TokenType.IDENTIFER)) {
     return { name: previous(), type: 'VariableExpr' };
   }
+  console.error(peek());
   throw new Error('Bad literal expression.');
 }
 
