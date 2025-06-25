@@ -103,11 +103,11 @@ function compileExpression(module: binaryen.Module, expression: Expr): number {
 }
 
 // A number like 5517120 is returned by this function - which is not the result value of performing the addition. Could be something related to Wasm internal
-function binaryExpression(module: binaryen.Module, ast: BinaryExpr): number {
-  const left = compileExpression(module, ast.left);
-  const right = compileExpression(module, ast.right);
+function binaryExpression(module: binaryen.Module, expression: BinaryExpr): number {
+  const left = compileExpression(module, expression.left);
+  const right = compileExpression(module, expression.right);
 
-  switch (ast.operator.type) {
+  switch (expression.operator.type) {
     case TokenType.PLUS:
       return module.i32.add(left, right);
     case TokenType.MINUS:
@@ -119,7 +119,7 @@ function binaryExpression(module: binaryen.Module, ast: BinaryExpr): number {
     case TokenType.LESS:
       return module.i32.lt_s(left, right);
     default:
-      console.error(ast.operator);
+      console.error(expression.operator);
       throw Error(`Unsupported binary operator.`);
   }
 }
@@ -134,17 +134,21 @@ function literalExpression(module: binaryen.Module, expression: LiteralExpr) {
       } else if (expression.value == false) {
         return module.i32.const(0);
       }
+      break;
+    default:
+      console.error(expression);
+      throw Error('Unsupported literal expression.');
   }
 }
 
-function unaryExpression(module: binaryen.Module, ast: UnaryExpr) {
-  switch (ast.operator.type) {
+function unaryExpression(module: binaryen.Module, expression: UnaryExpr) {
+  switch (expression.operator.type) {
     case TokenType.MINUS: {
-      let expr = compileExpression(module, ast.right);
+      let expr = compileExpression(module, expression.right);
       return module.i32.sub(module.i32.const(0), expr);
     }
     default:
-      console.error(ast.operator);
+      console.error(expression.operator);
       throw Error(`Unsupported binary operator.`);
   }
 }
