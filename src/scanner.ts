@@ -48,11 +48,13 @@ function scanToken() {
       break
     case '{':
       addToken(TokenType.LEFT_BRACE)
-      // Skip the initial newline after entering a block
-      if (peek() == '\n') advance()
+      // Skip newlines after entering a block
+      while (peek() == '\n') advance()
       break
     case '}':
       addToken(TokenType.RIGHT_BRACE)
+      // Skip new lines after exiting a block
+      while (peek() == '\n') advance()
       break
     case ':':
       addToken(TokenType.COLON)
