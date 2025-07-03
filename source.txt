@@ -1,4 +1,4 @@
 let foo = 42
-# print foo
 let bar = 100
 print foo
+print bar

@@ -3,11 +3,25 @@ import type { BinaryExpr, Expr, LiteralExpr, UnaryExpr } from './Expr'
 import TokenType from './TokenType'
 import type { Stmt } from './Stmt'
 
+let varTable: Map<string, { index: number; expr: Expr }>
+
+function createVarTable(statements: Stmt[]) {
+  let varCount = 0
+  let varMap = new Map()
+  for (let statement of statements) {
+    if (statement.type == 'VariableStmt') {
+      let varName = statement.name.lexeme
+      varMap.set(varName, { index: varCount++, expr: statement.initializer })
+    }
+  }
+
+  varTable = varMap
+}
+
 export default function compile(statements: Stmt[]) {
   const module = new binaryen.Module()
-  const body = program(module, statements)
 
-  // Import for print function
+  // Import print function
   module.addFunctionImport(
     'print_i32',
     'console',
@@ -16,7 +30,13 @@ export default function compile(statements: Stmt[]) {
     binaryen.none
   )
 
-  module.addFunction('main', binaryen.createType([]), binaryen.none, [binaryen.i32], body)
+  createVarTable(statements)
+  let params = Array(varTable.size).fill(binaryen.i32)
+  // console.log(varTable)
+
+  const body = program(module, statements)
+
+  module.addFunction('main', binaryen.createType([]), binaryen.none, params, body)
   module.addFunctionExport('main', 'main')
 
   // Wasm text before validation to view the compiled output
@@ -57,7 +77,10 @@ function compileStatement(module: binaryen.Module, stmt: Stmt): binaryen.Express
     }
     case 'VariableStmt': {
       let expr = compileExpression(module, stmt.initializer)
-      return module.local.set(0, expr)
+
+      let varName = stmt.name.lexeme
+      let varIndex = varTable.get(varName)!.index
+      return module.local.set(varIndex, expr)
     }
     case 'BlockStmt': {
       // Is there no difference between the way a program is compiled and a block is? Maybe later once we get to functions?
@@ -89,7 +112,13 @@ function compileExpression(module: binaryen.Module, expression: Expr): binaryen.
     case 'LiteralExpr':
       return literalExpression(module, expression)
     case 'VariableExpr':
-      return module.local.get(0, binaryen.i32)
+      let varName = expression.name.lexeme
+      if (varTable.has(varName)) {
+        let varIndex = varTable.get(varName)!.index
+        return module.local.get(varIndex, binaryen.i32)
+      } else {
+        throw Error('Access to undefined variable.')
+      }
     case 'GroupingExpr':
       return compileExpression(module, expression.expression)
     case 'UnaryExpr':
