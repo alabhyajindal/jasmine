@@ -1,5 +1,5 @@
 import binaryen from 'binaryen'
-import type { BinaryExpr, Expr, LiteralExpr, UnaryExpr } from './Expr'
+import type { BinaryExpr, CallExpr, Expr, LiteralExpr, UnaryExpr } from './Expr'
 import TokenType from './TokenType'
 import type { Stmt } from './Stmt'
 import { COMPILE_ERROR, reportError } from './error'
@@ -31,17 +31,17 @@ export default function compile(statements: Stmt[]) {
     binaryen.none
   )
 
-  createVarTable(statements)
-  let params = Array(varTable.size).fill(binaryen.i32)
+  module.autoDrop
 
+  createVarTable(statements)
+  let varTypes = Array(varTable.size).fill(binaryen.i32)
   const body = program(module, statements)
 
-  module.addFunction('main', binaryen.createType([]), binaryen.none, params, body)
+  module.addFunction('main', binaryen.createType([]), binaryen.none, varTypes, body)
   module.addFunctionExport('main', 'main')
 
-  // Wasm text before validation to view the compiled output
-  // const wasmText = module.emitText();
-  // console.log(wasmText);
+  const wasmText = module.emitText()
+  console.log(wasmText)
 
   // Validate the module
   if (!module.validate()) {
@@ -69,7 +69,7 @@ function compileStatement(module: binaryen.Module, stmt: Stmt): binaryen.Express
   switch (stmt.type) {
     case 'ExprStmt': {
       let expr = compileExpression(module, stmt.expression)
-      return module.drop(expr)
+      // return module.drop(expr)
     }
     case 'PrintStmt': {
       let expr = compileExpression(module, stmt.expression)
@@ -98,6 +98,15 @@ function compileStatement(module: binaryen.Module, stmt: Stmt): binaryen.Express
 
       return module.if(condition, thenBranch)
     }
+    case 'FunDecl': {
+      let name = stmt.name.lexeme
+      let paramTypes = binaryen.createType([])
+      let returnType = binaryen.none
+      let varTypes = []
+      let body = compileStatement(module, stmt.body)
+      module.addFunction(name, paramTypes, returnType, varTypes, body)
+      return module.nop()
+    }
     default: {
       console.error(stmt)
       throw Error('Unsupported statement.')
@@ -123,13 +132,14 @@ function compileExpression(module: binaryen.Module, expression: Expr): binaryen.
       return compileExpression(module, expression.expression)
     case 'UnaryExpr':
       return unaryExpression(module, expression)
+    case 'CallExpr':
+      return callExpression(module, expression)
     default:
       console.error(expression)
       throw Error('Unsupported ast type.')
   }
 }
 
-// A number like 5517120 is returned by this function - which is not the result value of performing the addition. Could be something related to Wasm internal
 function binaryExpression(module: binaryen.Module, expression: BinaryExpr): binaryen.ExpressionRef {
   const left = compileExpression(module, expression.left)
   const right = compileExpression(module, expression.right)
@@ -185,4 +195,9 @@ function unaryExpression(module: binaryen.Module, expression: UnaryExpr): binary
       console.error(expression.operator)
       throw Error(`Unsupported binary operator.`)
   }
+}
+
+function callExpression(module: binaryen.Module, expression: CallExpr): binaryen.ExpressionRef {
+  let name = expression.callee.name.lexeme
+  return module.call(name, [], binaryen.none)
 }
