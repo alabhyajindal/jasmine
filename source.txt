@@ -1,6 +1,4 @@
-if (5 != 5) {
-    print (5 + 5) * 2
-}
- else {
-    print 42
-}
+let foo = 42
+# print foo
+let bar = 100
+print foo

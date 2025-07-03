@@ -16,7 +16,7 @@ export default function compile(statements: Stmt[]) {
     binaryen.none
   )
 
-  module.addFunction('main', binaryen.createType([]), binaryen.none, [], body)
+  module.addFunction('main', binaryen.createType([]), binaryen.none, [binaryen.i32], body)
   module.addFunctionExport('main', 'main')
 
   // Wasm text before validation to view the compiled output
@@ -57,8 +57,7 @@ function compileStatement(module: binaryen.Module, stmt: Stmt): binaryen.Express
     }
     case 'VariableStmt': {
       let expr = compileExpression(module, stmt.initializer)
-      module.addGlobal(stmt.name.lexeme, binaryen.i32, true, expr)
-      return module.nop()
+      return module.local.set(0, expr)
     }
     case 'BlockStmt': {
       // Is there no difference between the way a program is compiled and a block is? Maybe later once we get to functions?
@@ -90,7 +89,7 @@ function compileExpression(module: binaryen.Module, expression: Expr): binaryen.
     case 'LiteralExpr':
       return literalExpression(module, expression)
     case 'VariableExpr':
-      return module.global.get(expression.name.lexeme, binaryen.i32)
+      return module.local.get(0, binaryen.i32)
     case 'GroupingExpr':
       return compileExpression(module, expression.expression)
     case 'UnaryExpr':
