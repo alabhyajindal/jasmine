@@ -2,6 +2,7 @@ import scan from './scanner'
 import parse from './parser'
 import compile from './compiler'
 import sphereSource from '../source.txt' // Included to reload Bun when the source text changes
+import { COMPILE_ERROR, PARSE_ERROR } from './error'
 
 // console.log(sphereSource)
 let _ = sphereSource
@@ -27,16 +28,19 @@ if (args.length == 2) {
     process.exit()
   }
   const sourceText = await sourceFile.text()
-  run(sourceText)
+
+  try {
+    run(sourceText)
+  } catch (error) {
+    if (error != PARSE_ERROR && error != COMPILE_ERROR) {
+      throw error
+    }
+  }
 }
 
 function run(source: string) {
   const tokens = scan(source)
-  // console.log(tokens)
-  // return;
   const statements = parse(tokens)
-  // console.log(JSON.stringify(statements, null, 2));
-  // return
 
   const wasmBinary = compile(statements)
 

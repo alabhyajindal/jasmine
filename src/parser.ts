@@ -1,3 +1,4 @@
+import { PARSE_ERROR, reportError } from './error'
 import type { BinaryExpr, Expr, LiteralExpr, UnaryExpr, VariableExpr } from './Expr'
 import type { BlockStmt, ExprStmt, IfStmt, PrintStmt, Stmt, VariableStmt } from './Stmt'
 import type Token from './Token'
@@ -156,8 +157,7 @@ function primary(): Expr {
     consume(TokenType.RIGHT_PAREN, "Expect ')' after expression.")
     return { expression: expr, type: 'GroupingExpr' }
   }
-  console.error(peek())
-  throw new Error('Bad literal expression.')
+  reportError(peek(), 'Invalid literal expression.', PARSE_ERROR)
 }
 
 function match(...types: TokenType[]) {
@@ -196,11 +196,5 @@ function consume(type: TokenType, msg: string) {
   if (check(type)) {
     return advance()
   }
-
-  reportError(peek(), msg)
-}
-
-function reportError(token: Token, msg: string): never {
-  console.error(`[line ${token.line} Error at ${token.lexeme}: ${msg}`)
-  throw Error()
+  reportError(peek(), msg, PARSE_ERROR)
 }

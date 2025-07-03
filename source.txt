@@ -1,4 +1,1 @@
-let foo = 42
-let bar = 100
-print foo
-print bar
+print 5 * 2

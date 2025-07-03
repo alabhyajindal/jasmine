@@ -2,6 +2,7 @@ import binaryen from 'binaryen'
 import type { BinaryExpr, Expr, LiteralExpr, UnaryExpr } from './Expr'
 import TokenType from './TokenType'
 import type { Stmt } from './Stmt'
+import { COMPILE_ERROR, reportError } from './error'
 
 let varTable: Map<string, { index: number; expr: Expr }>
 
@@ -32,7 +33,6 @@ export default function compile(statements: Stmt[]) {
 
   createVarTable(statements)
   let params = Array(varTable.size).fill(binaryen.i32)
-  // console.log(varTable)
 
   const body = program(module, statements)
 
@@ -156,8 +156,7 @@ function binaryExpression(module: binaryen.Module, expression: BinaryExpr): bina
     case TokenType.BANG_EQUAL:
       return module.i32.ne(left, right)
     default:
-      console.error(expression.operator)
-      throw Error(`Unsupported binary operator.`)
+      reportError(expression.operator, 'Unsupported binary operator.', COMPILE_ERROR)
   }
 }
 
