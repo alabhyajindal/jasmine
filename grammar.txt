@@ -13,7 +13,7 @@ comparison  → term ( ( ">" | ">=" | "<" | "<=" ) term )* ;
 term        → factor ( ( "+" | "-" ) factor )* ;
 factor      → unary ( ( "/" | "*" ) unary )* ;
 unary       → ( "!" | "-" ) unary | call ;
-call        → primary ( "(" argument ")" )* ;
+call        → primary ( "(" argument? ")" )? ;
 primary     → NUMBER | IDENTIFIER | "(" expression ")" ;
 
 function    → IDENTIFIER "(" parameters? ")" block ;

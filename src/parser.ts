@@ -160,7 +160,25 @@ function unary(): Expr {
     return { operator, right, type: 'UnaryExpr' }
   }
 
-  return primary()
+  return call()
+}
+
+function call(): Expr {
+  let expr = primary()
+
+  if (match(TokenType.LEFT_PAREN)) {
+    let args = []
+    if (!check(TokenType.RIGHT_PAREN)) {
+      do {
+        args.push(expression())
+      } while (match(TokenType.COMMA))
+    }
+
+    consume(TokenType.RIGHT_PAREN, "Expect ')' after arguments.")
+    return { callee: expr, args, type: 'CallExpr' }
+  }
+
+  return expr
 }
 
 function primary(): Expr {
@@ -181,6 +199,7 @@ function primary(): Expr {
     consume(TokenType.RIGHT_PAREN, "Expect ')' after expression.")
     return { expression: expr, type: 'GroupingExpr' }
   }
+
   reportError(peek(), 'Invalid literal expression.', PARSE_ERROR)
 }
 
