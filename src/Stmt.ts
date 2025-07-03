@@ -1,7 +1,7 @@
 import type { Expr } from './Expr'
 import type Token from './Token'
 
-export type Stmt = BlockStmt | ExprStmt | PrintStmt | VariableStmt | IfStmt
+export type Stmt = BlockStmt | ExprStmt | PrintStmt | VariableStmt | IfStmt | FunDecl
 
 export interface BlockStmt {
   type: 'BlockStmt'
@@ -11,6 +11,13 @@ export interface BlockStmt {
 export interface ExprStmt {
   type: 'ExprStmt'
   expression: Expr
+}
+
+export interface FunDecl {
+  type: 'FunDecl'
+  name: Token
+  params: Token[]
+  body: BlockStmt
 }
 
 export interface IfStmt {

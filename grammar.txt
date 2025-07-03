@@ -1,8 +1,9 @@
 program     → statement* EOF ;
-statement   → varStmt | exprStmt | printStmt ;
+statement   → varStmt | exprStmt | printStmt | funStmt ;
 varStmt     → "let" IDENTIFIER "=" expression "\n" ;
 exprStmt    → expression "\n" ;
 printStmt   → "print" expression "\n" ;
+funStmt     → "fn" function ;
 block       → "{" statement* "}" ;
 
 
@@ -11,5 +12,10 @@ equality    → comparison ( ( "!=" | "==" ) comparison )* ;
 comparison  → term ( ( ">" | ">=" | "<" | "<=" ) term )* ;
 term        → factor ( ( "+" | "-" ) factor )* ;
 factor      → unary ( ( "/" | "*" ) unary )* ;
-unary       → ( "!" | "-" ) unary | primary ;
+unary       → ( "!" | "-" ) unary | call ;
+call        → primary ( "(" argument ")" )* ;
 primary     → NUMBER | IDENTIFIER | "(" expression ")" ;
+
+function    → IDENTIFIER "(" parameters? ")" block ;
+parameters  → IDENTIFIER  ( "," IDENTIFIER )* ;
+arguments   → expression ( "," expression )* ;

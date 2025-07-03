@@ -1,6 +1,6 @@
 import { PARSE_ERROR, reportError } from './error'
 import type { BinaryExpr, Expr, LiteralExpr, UnaryExpr, VariableExpr } from './Expr'
-import type { BlockStmt, ExprStmt, IfStmt, PrintStmt, Stmt, VariableStmt } from './Stmt'
+import type { BlockStmt, ExprStmt, FunDecl, IfStmt, PrintStmt, Stmt, VariableStmt } from './Stmt'
 import type Token from './Token'
 import TokenType from './TokenType'
 
@@ -30,6 +30,9 @@ function statement() {
   }
   if (match(TokenType.IF)) {
     return ifStatement()
+  }
+  if (match(TokenType.FN)) {
+    return funDeclaration()
   }
 
   return expressionStatement()
@@ -72,6 +75,27 @@ function ifStatement(): IfStmt {
   }
 
   return { condition, thenBranch, elseBranch, type: 'IfStmt' }
+}
+
+function funDeclaration(): FunDecl {
+  let name = consume(TokenType.IDENTIFER, 'Expect function name.')
+  consume(TokenType.LEFT_PAREN, "Expect '(' after function name.")
+
+  let params = []
+  // Get the first parameter if no right paren
+  if (!check(TokenType.RIGHT_PAREN)) {
+    params.push(consume(TokenType.IDENTIFER, 'Expect parameter name.'))
+  }
+  // Get the remaining parameters
+  while (peek().type != TokenType.RIGHT_PAREN) {
+    match(TokenType.COMMA)
+    params.push(consume(TokenType.IDENTIFER, 'Expect parameter name.'))
+  }
+  consume(TokenType.RIGHT_PAREN, "Expect ')' after parameters.")
+
+  consume(TokenType.LEFT_BRACE, "Expect '{' before function body.")
+  let body = blockStatement()
+  return { name, params, body, type: 'FunDecl' }
 }
 
 function expressionStatement(): ExprStmt {
