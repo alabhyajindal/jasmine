@@ -68,8 +68,7 @@ function program(module: binaryen.Module, statements: Stmt[]) {
 function compileStatement(module: binaryen.Module, stmt: Stmt): binaryen.ExpressionRef {
   switch (stmt.type) {
     case 'ExprStmt': {
-      let expr = compileExpression(module, stmt.expression)
-      // return module.drop(expr)
+      return compileExpression(module, stmt.expression)
     }
     case 'PrintStmt': {
       let expr = compileExpression(module, stmt.expression)
