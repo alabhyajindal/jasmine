@@ -1,5 +1,5 @@
-fn foo(a) {
-    print a
+fn foo(a, b) {
+    print a + b
 }
 
-foo(5)
+foo(5, 2)

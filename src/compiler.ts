@@ -37,7 +37,7 @@ export default function compile(statements: Stmt[]) {
 
   // Import print function
   module.addFunctionImport(
-    'print_i32',
+    'print',
     'console',
     'i32',
     binaryen.createType([binaryen.i32]),
@@ -85,7 +85,7 @@ function compileStatement(module: binaryen.Module, stmt: Stmt): binaryen.Express
     }
     case 'PrintStmt': {
       let expr = compileExpression(module, stmt.expression)
-      return module.call('print_i32', [expr], binaryen.none)
+      return module.call('print', [expr], binaryen.none)
     }
     case 'VariableStmt': {
       let expr = compileExpression(module, stmt.initializer)
