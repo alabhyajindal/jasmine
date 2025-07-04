@@ -3,8 +3,9 @@ import type { BinaryExpr, CallExpr, Expr, LiteralExpr, UnaryExpr } from './Expr'
 import TokenType from './TokenType'
 import type { Stmt } from './Stmt'
 import { COMPILE_ERROR, reportError } from './error'
+import type Token from './Token'
 
-let varTable: Map<string, { index: number; expr: Expr }>
+let varTable: Map<string, { index: number; expr?: Expr }>
 
 function createVarTable(statements: Stmt[]) {
   let varCount = 0
@@ -17,6 +18,18 @@ function createVarTable(statements: Stmt[]) {
   }
 
   varTable = varMap
+}
+
+function getFunVarTable(params: Token[]) {
+  let varCount = 0
+  let varMap = new Map()
+
+  for (let param of params) {
+    let varName = param.lexeme
+    varMap.set(varName, { index: varCount++ })
+  }
+
+  return varMap
 }
 
 export default function compile(statements: Stmt[]) {
@@ -101,7 +114,12 @@ function compileStatement(module: binaryen.Module, stmt: Stmt): binaryen.Express
       let name = stmt.name.lexeme
       let paramTypes = binaryen.createType(Array(stmt.params.length).fill(binaryen.i32))
       let returnType = binaryen.none
+
+      let temp = varTable
+      varTable = getFunVarTable(stmt.params)
       let body = compileStatement(module, stmt.body)
+      varTable = temp
+
       module.addFunction(name, paramTypes, returnType, [], body)
       return module.nop()
     }
