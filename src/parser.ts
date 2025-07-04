@@ -1,6 +1,15 @@
 import { PARSE_ERROR, reportError } from './error'
 import type { BinaryExpr, Expr, LiteralExpr, UnaryExpr, VariableExpr } from './Expr'
-import type { BlockStmt, ExprStmt, FunDecl, IfStmt, PrintStmt, Stmt, VariableStmt } from './Stmt'
+import type {
+  BlockStmt,
+  ExprStmt,
+  FunDecl,
+  IfStmt,
+  PrintStmt,
+  ReturnStmt,
+  Stmt,
+  VariableStmt,
+} from './Stmt'
 import type Token from './Token'
 import TokenType from './TokenType'
 
@@ -33,6 +42,9 @@ function statement() {
   }
   if (match(TokenType.FN)) {
     return funDeclaration()
+  }
+  if (match(TokenType.RETURN)) {
+    return returnStatement()
   }
 
   return expressionStatement()
@@ -93,9 +105,23 @@ function funDeclaration(): FunDecl {
   }
   consume(TokenType.RIGHT_PAREN, "Expect ')' after parameters.")
 
+  consume(TokenType.ARROW, "Expect '->' after parameters.")
+  let returnType = consume(TokenType.INT, "Expect return type after '->'.")
+  // modify fundecl to include returntype
   consume(TokenType.LEFT_BRACE, "Expect '{' before function body.")
+
   let body = blockStatement()
   return { name, params, body, type: 'FunDecl' }
+}
+
+function returnStatement(): ReturnStmt {
+  let value = null
+  if (!check(TokenType.NEWLINE)) {
+    value = expression()
+  }
+  consume(TokenType.NEWLINE, 'Expect newline after expression.')
+
+  return { value: value as Expr, type: 'ReturnStmt' }
 }
 
 function expressionStatement(): ExprStmt {

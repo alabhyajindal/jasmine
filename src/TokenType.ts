@@ -22,6 +22,7 @@ enum TokenType {
   GREATER_EQUAL = 'GREATER_EQUAL',
   LESS = 'LESS',
   LESS_EQUAL = 'LESS_EQUAL',
+  ARROW = 'ARROW',
 
   // Keywords
   AND = 'AND',
@@ -37,7 +38,7 @@ enum TokenType {
   PRINT = 'PRINT',
 
   // Types
-  i32 = 'i32',
+  INT = 'INT',
 
   //   Literals
   IDENTIFER = 'IDENTIFER',

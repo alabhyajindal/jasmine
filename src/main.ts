@@ -41,6 +41,8 @@ if (args.length == 2) {
 function run(source: string) {
   const tokens = scan(source)
   const statements = parse(tokens)
+  console.log(JSON.stringify(statements, null, 2))
+  return
 
   const wasmBinary = compile(statements)
 

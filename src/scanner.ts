@@ -16,7 +16,7 @@ const keywords: Record<string, TokenType> = {
 }
 
 const types: Record<string, TokenType> = {
-  i32: TokenType.i32,
+  int: TokenType.INT,
 }
 
 let start = 0
@@ -72,7 +72,7 @@ function scanToken() {
       addToken(TokenType.DOT)
       break
     case '-':
-      addToken(TokenType.MINUS)
+      match('>') ? addToken(TokenType.ARROW) : addToken(TokenType.MINUS)
       break
     case '+':
       addToken(TokenType.PLUS)

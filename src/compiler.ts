@@ -115,6 +115,7 @@ function compileStatement(module: binaryen.Module, stmt: Stmt): binaryen.Express
       let paramTypes = binaryen.createType(Array(stmt.params.length).fill(binaryen.i32))
       let returnType = binaryen.none
 
+      // Each function gets a black state with nothing but the arguments passed in. That is, a function cannot access variables declared outside it's scope.
       let temp = varTable
       varTable = getFunVarTable(stmt.params)
       let body = compileStatement(module, stmt.body)

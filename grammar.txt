@@ -1,9 +1,10 @@
 program     → statement* EOF ;
-statement   → varStmt | exprStmt | printStmt | funStmt ;
+statement   → varStmt | exprStmt | printStmt | funStmt | returnStmt ;
 varStmt     → "let" IDENTIFIER "=" expression "\n" ;
 exprStmt    → expression "\n" ;
 printStmt   → "print" expression "\n" ;
 funStmt     → "fn" function ;
+returnStmt  → "return" expression? "\n" ;
 block       → "{" statement* "}" ;
 
 
