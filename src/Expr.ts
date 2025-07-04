@@ -11,7 +11,7 @@ export interface BinaryExpr {
 
 export interface CallExpr {
   type: 'CallExpr'
-  callee: Expr
+  callee: VariableExpr
   args: Expr[]
 }
 

@@ -175,7 +175,7 @@ function call(): Expr {
     }
 
     consume(TokenType.RIGHT_PAREN, "Expect ')' after arguments.")
-    return { callee: expr, args, type: 'CallExpr' }
+    return { callee: expr as VariableExpr, args, type: 'CallExpr' }
   }
 
   return expr

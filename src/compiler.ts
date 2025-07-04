@@ -101,9 +101,8 @@ function compileStatement(module: binaryen.Module, stmt: Stmt): binaryen.Express
       let name = stmt.name.lexeme
       let paramTypes = binaryen.createType([])
       let returnType = binaryen.none
-      let varTypes = []
       let body = compileStatement(module, stmt.body)
-      module.addFunction(name, paramTypes, returnType, varTypes, body)
+      module.addFunction(name, paramTypes, returnType, [], body)
       return module.nop()
     }
     default: {
