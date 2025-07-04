@@ -99,7 +99,7 @@ function compileStatement(module: binaryen.Module, stmt: Stmt): binaryen.Express
     }
     case 'FunDecl': {
       let name = stmt.name.lexeme
-      let paramTypes = binaryen.createType([])
+      let paramTypes = binaryen.createType(Array(stmt.params.length).fill(binaryen.i32))
       let returnType = binaryen.none
       let body = compileStatement(module, stmt.body)
       module.addFunction(name, paramTypes, returnType, [], body)
@@ -197,5 +197,7 @@ function unaryExpression(module: binaryen.Module, expression: UnaryExpr): binary
 
 function callExpression(module: binaryen.Module, expression: CallExpr): binaryen.ExpressionRef {
   let name = expression.callee.name.lexeme
-  return module.call(name, [], binaryen.none)
+  let args = expression.args.map((arg) => compileExpression(module, arg))
+
+  return module.call(name, args, binaryen.none)
 }
