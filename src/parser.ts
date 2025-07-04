@@ -106,12 +106,11 @@ function funDeclaration(): FunDecl {
   consume(TokenType.RIGHT_PAREN, "Expect ')' after parameters.")
 
   consume(TokenType.ARROW, "Expect '->' after parameters.")
-  let returnType = consume(TokenType.INT, "Expect return type after '->'.")
-  // modify fundecl to include returntype
+  let returnType = consume(TokenType.INT, "Expect return type after '->'.").type
   consume(TokenType.LEFT_BRACE, "Expect '{' before function body.")
 
   let body = blockStatement()
-  return { name, params, body, type: 'FunDecl' }
+  return { name, params, returnType, body, type: 'FunDecl' }
 }
 
 function returnStatement(): ReturnStmt {

@@ -4,7 +4,6 @@ import compile from './compiler'
 import sphereSource from '../source.txt' // Included to reload Bun when the source text changes
 import { COMPILE_ERROR, PARSE_ERROR } from './error'
 
-// console.log(sphereSource)
 let _ = sphereSource
 
 const args = Bun.argv
@@ -41,9 +40,6 @@ if (args.length == 2) {
 function run(source: string) {
   const tokens = scan(source)
   const statements = parse(tokens)
-  console.log(JSON.stringify(statements, null, 2))
-  return
-
   const wasmBinary = compile(statements)
 
   if (!wasmBinary) {

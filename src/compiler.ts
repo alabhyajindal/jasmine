@@ -44,8 +44,6 @@ export default function compile(statements: Stmt[]) {
     binaryen.none
   )
 
-  module.autoDrop
-
   createVarTable(statements)
   let varTypes = Array(varTable.size).fill(binaryen.i32)
   const body = program(module, statements)
@@ -70,8 +68,6 @@ export default function compile(statements: Stmt[]) {
 function program(module: binaryen.Module, statements: Stmt[]) {
   let res = []
   for (let stmt of statements) {
-    // console.log(stmt);
-    // console.log('---');
     res.push(compileStatement(module, stmt))
   }
 
@@ -113,7 +109,11 @@ function compileStatement(module: binaryen.Module, stmt: Stmt): binaryen.Express
     case 'FunDecl': {
       let name = stmt.name.lexeme
       let paramTypes = binaryen.createType(Array(stmt.params.length).fill(binaryen.i32))
+
       let returnType = binaryen.none
+      if (stmt.returnType == 'INT') {
+        returnType = binaryen.i32
+      }
 
       // Each function gets a black state with nothing but the arguments passed in. That is, a function cannot access variables declared outside it's scope.
       let temp = varTable
@@ -123,6 +123,10 @@ function compileStatement(module: binaryen.Module, stmt: Stmt): binaryen.Express
 
       module.addFunction(name, paramTypes, returnType, [], body)
       return module.nop()
+    }
+    case 'ReturnStmt': {
+      let val = compileExpression(module, stmt.value)
+      return module.return(val)
     }
     default: {
       console.error(stmt)
@@ -218,5 +222,7 @@ function callExpression(module: binaryen.Module, expression: CallExpr): binaryen
   let name = expression.callee.name.lexeme
   let args = expression.args.map((arg) => compileExpression(module, arg))
 
-  return module.call(name, args, binaryen.none)
+  // the return type of call here must match the return type of the defined function. to do this we would need to look up the function we are calling and then get the return type of it from there.
+
+  return module.call(name, args, binaryen.i32)
 }
