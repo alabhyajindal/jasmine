@@ -90,7 +90,7 @@ export default function compile(statements: Stmt[]) {
 function program(module: binaryen.Module, statements: Stmt[]) {
   let res = []
   for (let stmt of statements) {
-    res.push(compileStatement(module, stmt))
+    res.push(module.drop(compileStatement(module, stmt)))
   }
 
   return module.block(null, res, binaryen.none)
@@ -115,7 +115,7 @@ function compileStatement(module: binaryen.Module, stmt: Stmt): binaryen.Express
       // Is there no difference between the way a program is compiled and a block is? Maybe later once we get to functions?
       // They do differ - a program always returns none type - but a block may have a return statement and thus a return type when it's part of a function
       let statements = stmt.statements
-      return program(module, statements)
+      return blockStatement(module, statements)
     }
     case 'IfStmt': {
       let condition = compileExpression(module, stmt.condition)
@@ -154,6 +154,21 @@ function compileStatement(module: binaryen.Module, stmt: Stmt): binaryen.Express
       throw Error('Unsupported statement.')
     }
   }
+}
+
+function printStatement(module: binaryen.Module, stmt: PrintStmt): binaryen.ExportRef {
+  console.log(stmt)
+  let expr = compileExpression(module, stmt.expression)
+  return module.call('print', [expr], binaryen.none)
+}
+
+function blockStatement(module: binaryen.Module, statements: Stmt[]) {
+  let res = []
+  for (let stmt of statements) {
+    res.push(compileStatement(module, stmt))
+  }
+
+  return module.block(null, res, binaryen.none)
 }
 
 function compileExpression(module: binaryen.Module, expression: Expr): binaryen.ExpressionRef {
@@ -246,10 +261,4 @@ function callExpression(module: binaryen.Module, expression: CallExpr): binaryen
   // the return type of call here must match the return type of the defined function. to do this we would need to look up the function we are calling and then get the return type of it from there.
 
   return module.call(name, args, binaryen.i32)
-}
-
-function printStatement(module: binaryen.Module, stmt: PrintStmt): binaryen.ExportRef {
-  console.log(stmt)
-  let expr = compileExpression(module, stmt.expression)
-  return module.call('print', [expr], binaryen.none)
 }
