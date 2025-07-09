@@ -1,7 +1,7 @@
 import binaryen from 'binaryen'
 import type { BinaryExpr, CallExpr, Expr, LiteralExpr, UnaryExpr } from './Expr'
 import TokenType from './TokenType'
-import type { Stmt } from './Stmt'
+import type { PrintStmt, Stmt } from './Stmt'
 import { COMPILE_ERROR, reportError } from './error'
 import type Token from './Token'
 
@@ -36,28 +36,50 @@ export default function compile(statements: Stmt[]) {
   const module = new binaryen.Module()
 
   // Import print function
+  // module.addFunctionImport(
+  //   'print',
+  //   'console',
+  //   'i32',
+  //   binaryen.createType([binaryen.i32]),
+  //   binaryen.none
+  // )
+
+  const printParams = binaryen.createType([
+    binaryen.i32, // fd
+    binaryen.i32, // iovs
+    binaryen.i32, // iovs_len
+    binaryen.i32, // nwritten
+  ])
+
   module.addFunctionImport(
-    'print',
-    'console',
-    'i32',
-    binaryen.createType([binaryen.i32]),
-    binaryen.none
+    'fd_write', // internal name
+    'wasi_snapshot_preview1', // module
+    'fd_write', // base name
+    printParams,
+    binaryen.i32
   )
+
+  // Export memory
+  module.setMemory(1, 1, 'memory')
 
   createVarTable(statements)
   let varTypes = Array(varTable.size).fill(binaryen.i32)
-  const body = program(module, statements)
+  let body = program(module, statements)
+  // body = module.drop(body)
 
   module.addFunction('main', binaryen.createType([]), binaryen.none, varTypes, body)
   module.addFunctionExport('main', 'main')
 
-  // const wasmText = module.emitText()
-  // console.log(wasmText)
+  const wasmText = module.emitText()
+  console.log(wasmText)
 
   // Validate the module
   if (!module.validate()) {
     throw Error('Validation error.')
   }
+
+  // Returning wasmtext since wasmtime can run it directly - good for inspection as well
+  return wasmText
 
   // Emitting WebAssembly
   const wasmBinary = module.emitBinary()
@@ -80,8 +102,7 @@ function compileStatement(module: binaryen.Module, stmt: Stmt): binaryen.Express
       return compileExpression(module, stmt.expression)
     }
     case 'PrintStmt': {
-      let expr = compileExpression(module, stmt.expression)
-      return module.call('print', [expr], binaryen.none)
+      return printStatement(module, stmt)
     }
     case 'VariableStmt': {
       let expr = compileExpression(module, stmt.initializer)
@@ -225,4 +246,10 @@ function callExpression(module: binaryen.Module, expression: CallExpr): binaryen
   // the return type of call here must match the return type of the defined function. to do this we would need to look up the function we are calling and then get the return type of it from there.
 
   return module.call(name, args, binaryen.i32)
+}
+
+function printStatement(module: binaryen.Module, stmt: PrintStmt): binaryen.ExportRef {
+  console.log(stmt)
+  let expr = compileExpression(module, stmt.expression)
+  return module.call('print', [expr], binaryen.none)
 }
