@@ -1,3 +1,4 @@
+import { $ } from 'bun'
 import scan from './scanner'
 import parse from './parser'
 import compile from './compiler'
@@ -37,7 +38,7 @@ if (args.length == 2) {
   }
 }
 
-function run(source: string) {
+async function run(source: string) {
   const tokens = scan(source)
   const statements = parse(tokens)
   // console.log(JSON.stringify(statements, null, 2))
@@ -48,6 +49,7 @@ function run(source: string) {
   }
 
   Bun.write('out.wat', wasmBinary)
+  await $`wasmtime out.wat`
   return
 
   // Define the imports that WebAssembly expects

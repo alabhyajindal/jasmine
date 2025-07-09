@@ -78,13 +78,7 @@ export default function compile(statements: Stmt[]) {
     throw Error('Validation error.')
   }
 
-  // Returning wasmtext since wasmtime can run it directly - good for inspection as well
   return wasmText
-
-  // Emitting WebAssembly
-  const wasmBinary = module.emitBinary()
-
-  return wasmBinary
 }
 
 function program(module: binaryen.Module, statements: Stmt[]) {
