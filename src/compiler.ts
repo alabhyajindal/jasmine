@@ -51,8 +51,8 @@ export default function compile(statements: Stmt[]) {
   module.addFunction('main', binaryen.createType([]), binaryen.none, varTypes, body)
   module.addFunctionExport('main', 'main')
 
-  const wasmText = module.emitText()
-  console.log(wasmText)
+  // const wasmText = module.emitText()
+  // console.log(wasmText)
 
   // Validate the module
   if (!module.validate()) {
