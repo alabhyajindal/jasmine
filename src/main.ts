@@ -50,18 +50,4 @@ async function run(source: string) {
 
   Bun.write('out.wat', wasmBinary)
   await $`wasmtime out.wat`
-  return
-
-  // Define the imports that WebAssembly expects
-  const imports = {
-    console: {
-      i32: (value: number) => {
-        console.log(value)
-      },
-    },
-  }
-
-  // Example usage with the WebAssembly API
-  const compiled = new WebAssembly.Module(wasmBinary)
-  // const instance = new WebAssembly.Instance(compiled, imports)
 }

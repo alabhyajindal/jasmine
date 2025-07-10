@@ -35,29 +35,8 @@ function getFunVarTable(params: Token[]) {
 export default function compile(statements: Stmt[]) {
   const module = new binaryen.Module()
 
-  // Import print function
-  // module.addFunctionImport(
-  //   'print',
-  //   'console',
-  //   'i32',
-  //   binaryen.createType([binaryen.i32]),
-  //   binaryen.none
-  // )
-
-  const printParams = binaryen.createType([
-    binaryen.i32, // fd
-    binaryen.i32, // iovs
-    binaryen.i32, // iovs_len
-    binaryen.i32, // nwritten
-  ])
-
-  module.addFunctionImport(
-    'fd_write', // internal name
-    'wasi_snapshot_preview1', // module
-    'fd_write', // base name
-    printParams,
-    binaryen.i32
-  )
+  let params = binaryen.createType([binaryen.i32, binaryen.i32, binaryen.i32, binaryen.i32])
+  module.addFunctionImport('fd_write', 'wasi_snapshot_preview1', 'fd_write', params, binaryen.i32)
 
   // Export memory
   module.setMemory(1, 1, 'memory')
@@ -67,8 +46,8 @@ export default function compile(statements: Stmt[]) {
   let body = program(module, statements)
   // body = module.drop(body)
 
-  module.addFunction('main', binaryen.createType([]), binaryen.none, varTypes, body)
-  module.addFunctionExport('main', 'main')
+  module.addFunction('_start', binaryen.createType([]), binaryen.none, varTypes, body)
+  module.addFunctionExport('_start', '_start')
 
   const wasmText = module.emitText()
   console.log(wasmText)
@@ -150,10 +129,14 @@ function compileStatement(module: binaryen.Module, stmt: Stmt): binaryen.Express
   }
 }
 
+// function printStatement(module: binaryen.Module, stmt: PrintStmt): binaryen.ExportRef {
+//   console.log(stmt)
+//   let expr = compileExpression(module, stmt.expression)
+//   return module.call('fd_write', [expr], binaryen.none)
+// }
+
 function printStatement(module: binaryen.Module, stmt: PrintStmt): binaryen.ExportRef {
-  console.log(stmt)
-  let expr = compileExpression(module, stmt.expression)
-  return module.call('print', [expr], binaryen.none)
+  module.i32.store()
 }
 
 function blockStatement(module: binaryen.Module, statements: Stmt[]) {
