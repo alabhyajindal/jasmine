@@ -5,35 +5,9 @@ import type { Stmt } from './Stmt'
 import { COMPILE_ERROR, reportError } from './error'
 import type Token from './Token'
 
-let varTable: Map<string, { index: number; expr?: Expr }>
-
-function createVarTable(statements: Stmt[]) {
-  let varCount = 0
-  let varMap = new Map()
-  for (let statement of statements) {
-    if (statement.type == 'VariableStmt') {
-      let varName = statement.name.lexeme
-      varMap.set(varName, { index: varCount++, expr: statement.initializer })
-    }
-  }
-
-  varTable = varMap
-}
-
-function getFunVarTable(params: Token[]) {
-  let varCount = 0
-  let varMap = new Map()
-
-  for (let param of params) {
-    let varName = param.lexeme
-    varMap.set(varName, { index: varCount++ })
-  }
-
-  return varMap
-}
-
 export default function compile(statements: Stmt[]) {
   const module = new binaryen.Module()
+  module.setMemory(1, 2, 'memory')
 
   // Import print function
   module.addFunctionImport(
@@ -48,8 +22,8 @@ export default function compile(statements: Stmt[]) {
   let varTypes = Array(varTable.size).fill(binaryen.i32)
   const body = program(module, statements)
 
-  module.addFunction('main', binaryen.createType([]), binaryen.none, varTypes, body)
-  module.addFunctionExport('main', 'main')
+  module.addFunction('_start', binaryen.createType([]), binaryen.none, varTypes, body)
+  module.addFunctionExport('_start', '_start')
 
   const wasmText = module.emitText()
   console.log(wasmText)
@@ -200,6 +174,8 @@ function literalExpression(
       return module.i32.const(expression.value)
     case 'boolean':
       return module.i32.const(expression.value ? 1 : 0)
+    case 'string':
+      console.log(expression)
     default:
       console.error(expression)
       throw Error('Unsupported literal expression.')
@@ -225,4 +201,31 @@ function callExpression(module: binaryen.Module, expression: CallExpr): binaryen
   // the return type of call here must match the return type of the defined function. to do this we would need to look up the function we are calling and then get the return type of it from there.
 
   return module.call(name, args, binaryen.i32)
+}
+
+let varTable: Map<string, { index: number; expr?: Expr }>
+
+function createVarTable(statements: Stmt[]) {
+  let varCount = 0
+  let varMap = new Map()
+  for (let statement of statements) {
+    if (statement.type == 'VariableStmt') {
+      let varName = statement.name.lexeme
+      varMap.set(varName, { index: varCount++, expr: statement.initializer })
+    }
+  }
+
+  varTable = varMap
+}
+
+function getFunVarTable(params: Token[]) {
+  let varCount = 0
+  let varMap = new Map()
+
+  for (let param of params) {
+    let varName = param.lexeme
+    varMap.set(varName, { index: varCount++ })
+  }
+
+  return varMap
 }

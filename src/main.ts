@@ -40,8 +40,6 @@ if (args.length == 2) {
 function run(source: string) {
   const tokens = scan(source)
   const statements = parse(tokens)
-  console.log(statements)
-  return
   const wasmBinary = compile(statements)
 
   if (!wasmBinary) {
@@ -62,5 +60,5 @@ function run(source: string) {
   const instance = new WebAssembly.Instance(compiled, imports)
 
   // @ts-expect-error: Exported functions are available under exports
-  instance.exports.main()
+  instance.exports._start()
 }
