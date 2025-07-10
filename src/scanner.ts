@@ -30,7 +30,6 @@ export default function scan(sourceText: string) {
 
   while (!isAtEnd()) {
     start = current
-    console.log('oo')
     scanToken()
   }
 
@@ -181,7 +180,8 @@ function string() {
   }
 
   advance()
-  addToken(TokenType.STRING)
+  let value = source.substring(start + 1, current - 1)
+  addToken(TokenType.STRING, value)
 }
 
 // Handles keywords, types and identifiers

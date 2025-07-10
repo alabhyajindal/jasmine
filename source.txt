@@ -1,1 +1,1 @@
-'nice'
+print 'nice'

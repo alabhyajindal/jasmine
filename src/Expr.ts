@@ -22,7 +22,7 @@ export interface GroupingExpr {
 
 export interface LiteralExpr {
   type: 'LiteralExpr'
-  value: number | boolean
+  value: number | boolean | string
 }
 
 export interface UnaryExpr {

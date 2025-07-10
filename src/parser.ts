@@ -216,6 +216,9 @@ function primary(): Expr {
   if (match(TokenType.INTEGER)) {
     return { value: previous().literal as number, type: 'LiteralExpr' }
   }
+  if (match(TokenType.STRING)) {
+    return { value: previous().literal as string, type: 'LiteralExpr' }
+  }
   if (match(TokenType.IDENTIFER)) {
     return { name: previous(), type: 'VariableExpr' }
   }
