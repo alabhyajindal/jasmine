@@ -39,6 +39,8 @@ if (args.length == 2) {
 
 function run(source: string) {
   const tokens = scan(source)
+  console.log(tokens)
+  return
   const statements = parse(tokens)
   const wasmBinary = compile(statements)
 

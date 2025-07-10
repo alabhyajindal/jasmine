@@ -16,7 +16,7 @@ const keywords: Record<string, TokenType> = {
 }
 
 const types: Record<string, TokenType> = {
-  int: TokenType.INT,
+  int: TokenType.TYPE_INT,
 }
 
 let start = 0
@@ -30,6 +30,7 @@ export default function scan(sourceText: string) {
 
   while (!isAtEnd()) {
     start = current
+    console.log('oo')
     scanToken()
   }
 
@@ -111,6 +112,9 @@ function scanToken() {
       addToken(TokenType.NEWLINE)
       line++
       break
+    case "'":
+      string()
+      break
     default:
       if (isDigit(c)) {
         number()
@@ -164,6 +168,20 @@ function number() {
 
   let value = Number.parseInt(source.substring(start, current))
   addToken(TokenType.INTEGER, value)
+}
+
+function string() {
+  while (peek() != "'") {
+    advance()
+  }
+
+  if (isAtEnd()) {
+    reportError('Unterminated string.')
+    return
+  }
+
+  advance()
+  addToken(TokenType.STRING)
 }
 
 // Handles keywords, types and identifiers

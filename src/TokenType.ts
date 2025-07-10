@@ -38,11 +38,12 @@ enum TokenType {
   PRINT = 'PRINT',
 
   // Types
-  INT = 'INT',
+  TYPE_INT = 'TYPE_INT',
 
   //   Literals
   IDENTIFER = 'IDENTIFER',
   INTEGER = 'INTEGER',
+  STRING = 'STRING',
 
   //   Misc
   NEWLINE = 'NEWLINE',
