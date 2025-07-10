@@ -85,7 +85,7 @@ function compileStatement(module: binaryen.Module, stmt: Stmt): binaryen.Express
       let paramTypes = binaryen.createType(Array(stmt.params.length).fill(binaryen.i32))
 
       let returnType = binaryen.none
-      if (stmt.returnType == 'INT') {
+      if (stmt.returnType == TokenType.TYPE_INT) {
         returnType = binaryen.i32
       }
 
@@ -175,7 +175,7 @@ function literalExpression(
     case 'boolean':
       return module.i32.const(expression.value ? 1 : 0)
     case 'string':
-      console.log(expression)
+      return stringExpression(module, expression)
     default:
       console.error(expression)
       throw Error('Unsupported literal expression.')
@@ -201,6 +201,27 @@ function callExpression(module: binaryen.Module, expression: CallExpr): binaryen
   // the return type of call here must match the return type of the defined function. to do this we would need to look up the function we are calling and then get the return type of it from there.
 
   return module.call(name, args, binaryen.i32)
+}
+
+let stringTable: Map<string, { start: number; end: number }> = new Map()
+
+function stringExpression(module: binaryen.Module, expr: LiteralExpr): binaryen.ExpressionRef {
+  let name = expr.value as string
+  console.log(name)
+  let strIndex = stringTable.get(name)
+  if (strIndex) {
+    return module.i32.const(strIndex.start)
+  } else if (stringTable.size > 0) {
+    let prevStr = [...stringTable.keys()].pop()!
+    let prevPos = stringTable.get(prevStr)!
+
+    let newPos = { start: prevPos.end + 1, end: name.length }
+    stringTable.set(name, newPos)
+    return module.i32.const(newPos.start)
+  } else {
+    stringTable.set(name, { start: 0, end: name.length })
+    return module.i32.const(0)
+  }
 }
 
 let varTable: Map<string, { index: number; expr?: Expr }>
