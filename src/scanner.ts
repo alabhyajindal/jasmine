@@ -109,6 +109,7 @@ function scanToken() {
       break
     case '\n':
       addToken(TokenType.NEWLINE)
+      // Very brittle - fix this soon. The language should not trip up when there is no new line at the end of a file.
       line++
       break
     case "'":
