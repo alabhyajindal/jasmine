@@ -1,5 +1,5 @@
 {
-  "name": "backend",
+  "name": "jasmine",
   "module": "index.ts",
   "type": "module",
   "private": true,
@@ -10,7 +10,7 @@
     "@types/bun": "latest"
   },
   "peerDependencies": {
-    "typescript": "^5"
+    "typescript": "^5.8.3"
   },
   "dependencies": {
     "binaryen": "^123.0.0"
