@@ -2,3 +2,5 @@ fn another_function() -> nil {
     print 2
     print 5
 }
+
+another_function()

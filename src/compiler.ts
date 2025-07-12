@@ -38,12 +38,14 @@ function compileStatement(stmt: Stmt): string {
     case 'FunDecl': {
       let name = stmt.name.lexeme
       let { params, returnType } = stmt
+      let decl = `void ${name}()`
       let body = compileStatement(stmt.body)
 
-      return `void ${name}() ${body}`
+      declarations += decl + ';'
+
+      return `${decl} ${body}`
     }
     case 'BlockStmt': {
-      console.log(stmt)
       let body = ``
       for (let statement of stmt.statements) {
         body += compileStatement(statement)
@@ -66,8 +68,12 @@ function compileExpression(expr: Expr): string {
       }
     }
     case 'VariableExpr': {
-      console.log(expr)
       return `${expr.name.lexeme}`
+    }
+    case 'CallExpr': {
+      console.log(expr)
+      let name = expr.callee.name.lexeme
+      return `${name}()`
     }
   }
 }
