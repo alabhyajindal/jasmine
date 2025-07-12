@@ -5,6 +5,8 @@
 
 
 int main() {
-  int a = 20;
+  char greet[] = "hii!!";
+int count = 3;
+printf("greet\n");
   return 0;
 }

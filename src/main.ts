@@ -45,7 +45,7 @@ async function run(source: string) {
   // return
 
   Bun.write('build/main.c', program)
-  return
+  // return
 
   await $`/opt/wasi-sdk/bin/clang build/main.c -o build/main.wasm`
   await $`wasmtime build/main.wasm`

@@ -22,12 +22,14 @@ function compileStatement(stmt: Stmt) {
       return `printf("${expr}\\n");`
     }
     case 'VariableStmt': {
-      console.log(stmt)
       let name = stmt.name.lexeme
       let init = compileExpression(stmt.initializer)
-      console.log(name, init)
-      // come back to this, setting type to int for now
-      return `int ${name} = ${init};`
+
+      if (stmt.initializer.type == 'LiteralExpr' && typeof stmt.initializer.value == 'string') {
+        return `char ${name}[] = ${init};\n`
+      } else {
+        return `int ${name} = ${init};\n`
+      }
     }
   }
 }
@@ -36,8 +38,17 @@ function compileExpression(expr: Expr): string {
   switch (expr.type) {
     case 'BinaryExpr':
       return binaryExpression(expr)
-    case 'LiteralExpr':
-      return String(expr.value)
+    case 'LiteralExpr': {
+      if (typeof expr.value == 'string') {
+        return `"${expr.value}"`
+      } else {
+        return String(expr.value)
+      }
+    }
+    case 'VariableExpr': {
+      console.log(expr)
+      return `${expr.name.lexeme}`
+    }
   }
 }
 

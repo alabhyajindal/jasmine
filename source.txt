@@ -1,1 +1,3 @@
-let a = 20
+let greet = "hii!!"
+let count = 3
+print greet
