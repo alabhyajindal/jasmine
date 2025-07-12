@@ -17,6 +17,7 @@ const keywords: Record<string, TokenType> = {
 
 const types: Record<string, TokenType> = {
   int: TokenType.TYPE_INT,
+  nil: TokenType.TYPE_NIL,
 }
 
 let start = 0
@@ -33,7 +34,8 @@ export default function scan(sourceText: string) {
     scanToken()
   }
 
-  tokens.push({ type: TokenType.NEWLINE, lexeme: '', literal: null, line })
+  // Adding this causes issues because it adds a newline regardless of the previous token. If the previous token is close brace then the new line is redundant and gets passed to the parser - we don't want that. The parser should only receive new lines which are relevant.
+  // tokens.push({ type: TokenType.NEWLINE, lexeme: '', literal: null, line })
   tokens.push({ type: TokenType.EOF, lexeme: '', literal: null, line })
   return tokens
 }

@@ -7,13 +7,17 @@ let functions = ``
 
 export default function compile(statements: Stmt[]) {
   for (let stmt of statements) {
-    topLevel += compileStatement(stmt)
+    if (stmt.type != 'FunDecl') {
+      topLevel += compileStatement(stmt)
+    } else {
+      functions += compileStatement(stmt)
+    }
   }
 
   return constructProgram()
 }
 
-function compileStatement(stmt: Stmt) {
+function compileStatement(stmt: Stmt): string {
   switch (stmt.type) {
     case 'ExprStmt':
       return compileExpression(stmt.expression) + ';'
@@ -26,10 +30,26 @@ function compileStatement(stmt: Stmt) {
       let init = compileExpression(stmt.initializer)
 
       if (stmt.initializer.type == 'LiteralExpr' && typeof stmt.initializer.value == 'string') {
-        return `char ${name}[] = ${init};\n`
+        return `char ${name}[] = ${init};`
       } else {
-        return `int ${name} = ${init};\n`
+        return `int ${name} = ${init};`
       }
+    }
+    case 'FunDecl': {
+      let name = stmt.name.lexeme
+      let { params, returnType } = stmt
+      let body = compileStatement(stmt.body)
+
+      return `void ${name}() ${body}`
+    }
+    case 'BlockStmt': {
+      console.log(stmt)
+      let body = ``
+      for (let statement of stmt.statements) {
+        body += compileStatement(statement)
+      }
+
+      return `{${body}}`
     }
   }
 }

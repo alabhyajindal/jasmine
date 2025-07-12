@@ -106,7 +106,10 @@ function funDeclaration(): FunDecl {
   consume(TokenType.RIGHT_PAREN, "Expect ')' after parameters.")
 
   consume(TokenType.ARROW, "Expect '->' after parameters.")
-  let returnType = consume(TokenType.TYPE_INT, "Expect return type after '->'.").type
+  let returnType = consume(
+    [TokenType.TYPE_INT, TokenType.TYPE_NIL],
+    "Expect return type after '->'."
+  ).type
   consume(TokenType.LEFT_BRACE, "Expect '{' before function body.")
 
   let body = blockStatement()
@@ -263,9 +266,18 @@ function previous() {
   return tokens[current - 1]!
 }
 
-function consume(type: TokenType, msg: string) {
-  if (check(type)) {
-    return advance()
+function consume(type: TokenType[] | TokenType, msg: string) {
+  if (Array.isArray(type)) {
+    for (let t of type) {
+      if (check(t)) {
+        return advance()
+      }
+    }
+    reportError(peek(), msg, PARSE_ERROR)
+  } else {
+    if (check(type)) {
+      return advance()
+    }
+    reportError(peek(), msg, PARSE_ERROR)
   }
-  reportError(peek(), msg, PARSE_ERROR)
 }

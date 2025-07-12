@@ -1,1 +1,4 @@
-print 22
+fn another_function() -> nil {
+    print 2
+    print 5
+}
