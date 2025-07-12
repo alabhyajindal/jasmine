@@ -40,6 +40,8 @@ if (args.length == 2) {
 
 async function run(source: string) {
   const tokens = scan(source)
+  console.log(tokens)
+  // return
   const statements = parse(tokens)
   const program = compile(statements)
   // return

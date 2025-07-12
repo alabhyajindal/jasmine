@@ -33,6 +33,7 @@ export default function scan(sourceText: string) {
     scanToken()
   }
 
+  tokens.push({ type: TokenType.NEWLINE, lexeme: '', literal: null, line })
   tokens.push({ type: TokenType.EOF, lexeme: '', literal: null, line })
   return tokens
 }
@@ -108,8 +109,10 @@ function scanToken() {
     case '\t':
       break
     case '\n':
-      addToken(TokenType.NEWLINE)
-      // Very brittle - fix this soon. The language should not trip up when there is no new line at the end of a file.
+      let prevToken = tokens[tokens.length - 1]
+      if (prevToken?.type != TokenType.NEWLINE) {
+        addToken(TokenType.NEWLINE)
+      }
       line++
       break
     case '"':

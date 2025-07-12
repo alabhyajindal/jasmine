@@ -1,3 +1,1 @@
-let greet = "hii!!"
-let count = 3
-print greet
+print 22
