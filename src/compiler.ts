@@ -41,13 +41,12 @@ function compileStatement(stmt: Stmt): string {
     case 'FunDecl': {
       let name = stmt.name.lexeme
       let { params, returnType } = stmt
-      console.log(params)
 
-      let paramsStr = []
+      let paramsArr = []
       for (let p of params) {
-        paramsStr.push(`${typeMap[p.type]} ${p.name}`)
+        paramsArr.push(`${typeMap[p.type]} ${p.name}`)
       }
-      paramsStr = paramsStr.join(', ')
+      let paramsStr = paramsArr.join(', ')
 
       let decl = `${typeMap[returnType]} ${name}(${paramsStr})`
       let body = compileStatement(stmt.body)
@@ -64,6 +63,8 @@ function compileStatement(stmt: Stmt): string {
 
       return `{${body}}`
     }
+    default:
+      throw Error('not implemented')
   }
 }
 
@@ -92,6 +93,8 @@ function compileExpression(expr: Expr): string {
       let callArgs = args.join(', ')
       return `${name}(${callArgs})`
     }
+    default:
+      throw Error('not implemented')
   }
 }
 

@@ -17,8 +17,8 @@ export interface ExprStmt {
 export interface FunDecl {
   type: 'FunDecl'
   name: Token
-  params: { name: string; type: TokenType }[]
-  returnType: TokenType
+  params: Array<{ name: string; type: TokenType.TYPE_INT | TokenType.TYPE_NIL }>
+  returnType: TokenType.TYPE_INT | TokenType.TYPE_NIL
   body: BlockStmt
 }
 
