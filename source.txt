@@ -1,5 +1,5 @@
 fn another_function(a: int, b: int) -> nil {
-    print a + b
+    print a
 }
 
 another_function(1, 2)

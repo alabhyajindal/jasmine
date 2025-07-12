@@ -25,8 +25,18 @@ function compileStatement(stmt: Stmt): string {
     case 'ExprStmt':
       return compileExpression(stmt.expression) + ';'
     case 'PrintStmt': {
-      let expr = compileExpression(stmt.expression)
-      return `printf("${expr}\\n");`
+      {
+        if (stmt.expression.type == 'VariableExpr') {
+          let expr = compileExpression(stmt.expression)
+          // need to know the type of the variable at this point to print correctly
+          return `printf("%d", ${expr});`
+        } else {
+          let expr = compileExpression(stmt.expression)
+          // doesn't work with strings - as it wraps a returned string value which is already in quotes into quotes again
+          return `printf("${expr}\\n");`
+        }
+        break
+      }
     }
     case 'VariableStmt': {
       let name = stmt.name.lexeme
