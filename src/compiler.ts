@@ -1,17 +1,53 @@
+import type { BinaryExpr, Expr } from './Expr'
 import type { Stmt } from './Stmt'
 
-let functionDeclarations = ``
-let main = ``
-
-let program = `#include <stdio.h>
-
-int main() {
-
-  return 0;
-}`
+let declarations = ``
+let topLevel = ``
+let functions = ``
 
 export default function compile(statements: Stmt[]) {
-  console.log(statements)
+  for (let stmt of statements) {
+    topLevel += compileStatement(stmt)
+  }
+
+  return constructProgram()
+}
+
+function compileStatement(stmt: Stmt) {
+  switch (stmt.type) {
+    case 'ExprStmt':
+      return compileExpression(stmt.expression) + ';'
+  }
+}
+
+function compileExpression(expr: Expr): string {
+  switch (expr.type) {
+    case 'BinaryExpr':
+      return binaryExpression(expr)
+    case 'LiteralExpr':
+      return String(expr.value)
+  }
+}
+
+function binaryExpression(expr: BinaryExpr) {
+  const left = compileExpression(expr.left)
+  const right = compileExpression(expr.right)
+
+  const operator = expr.operator.lexeme
+  return `${left} ${operator} ${right}`
+}
+
+function constructProgram() {
+  let program = `#include <stdio.h>
+
+${declarations}
+
+${functions}
+
+int main() {
+  ${topLevel}
+  return 0;
+}`
 
   return program
 }
