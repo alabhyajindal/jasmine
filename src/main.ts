@@ -41,12 +41,11 @@ if (args.length == 2) {
 async function run(source: string) {
   const tokens = scan(source)
   const statements = parse(tokens)
-  console.log(JSON.stringify(statements, null, 2))
   const program = compile(statements)
   // return
 
   Bun.write('build/main.c', program)
-  // return
+  return
 
   await $`/opt/wasi-sdk/bin/clang build/main.c -o build/main.wasm`
   await $`wasmtime build/main.wasm`

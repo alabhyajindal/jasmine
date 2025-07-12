@@ -17,6 +17,18 @@ function compileStatement(stmt: Stmt) {
   switch (stmt.type) {
     case 'ExprStmt':
       return compileExpression(stmt.expression) + ';'
+    case 'PrintStmt': {
+      let expr = compileExpression(stmt.expression)
+      return `printf("${expr}\\n");`
+    }
+    case 'VariableStmt': {
+      console.log(stmt)
+      let name = stmt.name.lexeme
+      let init = compileExpression(stmt.initializer)
+      console.log(name, init)
+      // come back to this, setting type to int for now
+      return `int ${name} = ${init};`
+    }
   }
 }
 

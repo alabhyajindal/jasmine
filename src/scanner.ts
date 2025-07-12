@@ -112,7 +112,7 @@ function scanToken() {
       // Very brittle - fix this soon. The language should not trip up when there is no new line at the end of a file.
       line++
       break
-    case "'":
+    case '"':
       string()
       break
     default:
@@ -171,7 +171,7 @@ function number() {
 }
 
 function string() {
-  while (peek() != "'") {
+  while (peek() != '"') {
     advance()
   }
 

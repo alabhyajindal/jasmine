@@ -5,6 +5,6 @@
 
 
 int main() {
-  5 + 5;
+  int a = 20;
   return 0;
 }
