@@ -1,5 +1,8 @@
 import type { BinaryExpr, Expr } from './Expr'
 import type { Stmt } from './Stmt'
+import TokenType from './TokenType'
+
+let typeMap = { [TokenType.TYPE_INT]: 'int', [TokenType.TYPE_NIL]: 'void' }
 
 let declarations = ``
 let topLevel = ``
@@ -38,7 +41,15 @@ function compileStatement(stmt: Stmt): string {
     case 'FunDecl': {
       let name = stmt.name.lexeme
       let { params, returnType } = stmt
-      let decl = `void ${name}()`
+      console.log(params)
+
+      let paramsStr = []
+      for (let p of params) {
+        paramsStr.push(`${typeMap[p.type]} ${p.name}`)
+      }
+      paramsStr = paramsStr.join(', ')
+
+      let decl = `${typeMap[returnType]} ${name}(${paramsStr})`
       let body = compileStatement(stmt.body)
 
       declarations += decl + ';'
@@ -71,9 +82,15 @@ function compileExpression(expr: Expr): string {
       return `${expr.name.lexeme}`
     }
     case 'CallExpr': {
-      console.log(expr)
       let name = expr.callee.name.lexeme
-      return `${name}()`
+      let args = []
+      for (let arg of expr.args) {
+        let callArg = compileExpression(arg)
+        args.push(callArg)
+      }
+
+      let callArgs = args.join(', ')
+      return `${name}(${callArgs})`
     }
   }
 }

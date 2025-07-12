@@ -94,24 +94,24 @@ function funDeclaration(): FunDecl {
   consume(TokenType.LEFT_PAREN, "Expect '(' after function name.")
 
   let params = []
-  // Get the first parameter if no right paren
-  if (!check(TokenType.RIGHT_PAREN)) {
-    params.push(consume(TokenType.IDENTIFER, 'Expect parameter name.'))
-  }
-  // Get the remaining parameters
-  while (peek().type != TokenType.RIGHT_PAREN) {
-    match(TokenType.COMMA)
-    params.push(consume(TokenType.IDENTIFER, 'Expect parameter name.'))
-  }
-  consume(TokenType.RIGHT_PAREN, "Expect ')' after parameters.")
 
+  if (!check(TokenType.RIGHT_PAREN)) {
+    do {
+      let name = consume(TokenType.IDENTIFER, 'Expect parameter name.').lexeme
+      match(TokenType.COLON)
+      let type = consume([TokenType.TYPE_INT, TokenType.TYPE_NIL], 'Expect parameter type.').type
+      params.push({ name, type })
+    } while (match(TokenType.COMMA))
+  }
+
+  consume(TokenType.RIGHT_PAREN, "Expect ')' after parameters.")
   consume(TokenType.ARROW, "Expect '->' after parameters.")
   let returnType = consume(
     [TokenType.TYPE_INT, TokenType.TYPE_NIL],
     "Expect return type after '->'."
   ).type
-  consume(TokenType.LEFT_BRACE, "Expect '{' before function body.")
 
+  consume(TokenType.LEFT_BRACE, "Expect '{' before function body.")
   let body = blockStatement()
   return { name, params, returnType, body, type: 'FunDecl' }
 }
