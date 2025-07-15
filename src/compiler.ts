@@ -121,7 +121,7 @@ function printStatement(module: binaryen.Module, stmt: PrintStmt) {
   const bufferPtr = 66
 
   return module.block(null, [
-    module.i32.store8(0, 0, module.i32.const(bufferPtr), expr),
+    module.drop(module.call('itoa', [expr, module.i32.const(bufferPtr)], binaryen.i32)),
 
     // iovec structure
     module.i32.store(0, 4, module.i32.const(0), module.i32.const(bufferPtr)),
@@ -313,6 +313,9 @@ function initItoa(module: binaryen.Module) {
         ),
       ])
     ),
+
+    module.local.set(3, module.local.get(0, binaryen.i32)), // temp = num
+    module.local.set(4, module.local.get(2, binaryen.i32)), // digit = length
 
     module.loop(
       'convert_loop',
