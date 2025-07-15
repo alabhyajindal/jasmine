@@ -1,21 +1,29 @@
 import binaryen from 'binaryen'
 import type { BinaryExpr, CallExpr, Expr, LiteralExpr, UnaryExpr } from './Expr'
 import TokenType from './TokenType'
-import type { Stmt } from './Stmt'
+import type { PrintStmt, Stmt } from './Stmt'
 import { COMPILE_ERROR, reportError } from './error'
 import type Token from './Token'
 
 export default function compile(statements: Stmt[]) {
   const module = new binaryen.Module()
-  module.setMemory(1, 2, 'memory')
+  // module.setMemory(1, 2, 'memory')
 
   // Import print function
+  // module.addFunctionImport(
+  //   'print',
+  //   'console',
+  //   'i32',
+  //   binaryen.createType([binaryen.i32]),
+  //   binaryen.none
+  // )
+
   module.addFunctionImport(
-    'print',
-    'console',
-    'i32',
-    binaryen.createType([binaryen.i32]),
-    binaryen.none
+    'write',
+    'wasi_snapshot_preview1',
+    'fd_write',
+    binaryen.createType([binaryen.i32, binaryen.i32, binaryen.i32, binaryen.i32]),
+    binaryen.i32
   )
 
   createVarTable(statements)
@@ -25,18 +33,15 @@ export default function compile(statements: Stmt[]) {
   module.addFunction('_start', binaryen.createType([]), binaryen.none, varTypes, body)
   module.addFunctionExport('_start', '_start')
 
-  const wasmText = module.emitText()
-  console.log(wasmText)
+  const wat = module.emitText()
+  // console.log(wat)
 
   // Validate the module
   if (!module.validate()) {
     throw Error('Validation error.')
   }
 
-  // Emitting WebAssembly
-  const wasmBinary = module.emitBinary()
-
-  return wasmBinary
+  return wat
 }
 
 function program(module: binaryen.Module, statements: Stmt[]) {
@@ -54,8 +59,7 @@ function compileStatement(module: binaryen.Module, stmt: Stmt): binaryen.Express
       return compileExpression(module, stmt.expression)
     }
     case 'PrintStmt': {
-      let expr = compileExpression(module, stmt.expression)
-      return module.call('print', [expr], binaryen.none)
+      return printStatement(module, stmt)
     }
     case 'VariableStmt': {
       let expr = compileExpression(module, stmt.initializer)
@@ -107,6 +111,31 @@ function compileStatement(module: binaryen.Module, stmt: Stmt): binaryen.Express
       throw Error('Unsupported statement.')
     }
   }
+}
+
+function printStatement(module: binaryen.Module, stmt: PrintStmt) {
+  let expr = compileExpression(module, stmt.expression)
+
+  // console.log(expr)
+  let str = String('55') + '\n'
+  // console.log(str)
+  let strArr = new TextEncoder().encode(str)
+  // console.log(strArr)
+  module.setMemory(1, 2, 'memory', [{ offset: module.i32.const(66), data: strArr }])
+
+  return module.block(null, [
+    module.i32.store(0, 4, module.i32.const(0), module.i32.const(66)),
+    module.i32.store(0, 4, module.i32.const(4), module.i32.const(strArr.length)),
+    module.drop(
+      module.call(
+        'write',
+        [module.i32.const(1), module.i32.const(0), module.i32.const(1), module.i32.const(92)],
+        binaryen.i32
+      )
+    ),
+  ])
+
+  // return module.call('print', [expr], binaryen.none)
 }
 
 function compileExpression(module: binaryen.Module, expression: Expr): binaryen.ExpressionRef {

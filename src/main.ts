@@ -3,6 +3,7 @@ import parse from './parser'
 import compile from './compiler'
 import sphereSource from '../source.txt' // Included to reload Bun when the source text changes
 import { COMPILE_ERROR, PARSE_ERROR } from './error'
+import { $ } from 'bun'
 
 let _ = sphereSource
 
@@ -37,28 +38,32 @@ if (args.length == 2) {
   }
 }
 
-function run(source: string) {
+async function run(source: string) {
   const tokens = scan(source)
   const statements = parse(tokens)
-  const wasmBinary = compile(statements)
+  const wat = compile(statements)
 
-  if (!wasmBinary) {
+  if (!wat) {
     throw Error('Failed to generate binary.')
   }
 
+  Bun.write('build/main.wat', wat)
+
+  await $`wasmtime build/main.wat`
+
   // Define the imports that WebAssembly expects
-  const imports = {
-    console: {
-      i32: (value: number) => {
-        console.log(value)
-      },
-    },
-  }
+  // const imports = {
+  //   console: {
+  //     i32: (value: number) => {
+  //       console.log(value)
+  //     },
+  //   },
+  // }
 
-  // Example usage with the WebAssembly API
-  const compiled = new WebAssembly.Module(wasmBinary)
-  const instance = new WebAssembly.Instance(compiled, imports)
+  // // Example usage with the WebAssembly API
+  // const compiled = new WebAssembly.Module(wasmBinary)
+  // const instance = new WebAssembly.Instance(compiled, imports)
 
-  // @ts-expect-error: Exported functions are available under exports
-  instance.exports._start()
+  // // @ts-expect-error: Exported functions are available under exports
+  // instance.exports._start()
 }
