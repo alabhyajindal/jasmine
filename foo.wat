@@ -33,6 +33,6 @@
         call $write ;; call fd_write and drop the result code
         drop
 
-        (i32.load (i32.const 108)) ;; output the number of bytes written
+        (i32.load (i32.const 92)) ;; output the number of bytes written
     )
 )
