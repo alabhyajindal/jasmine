@@ -26,6 +26,8 @@ export default function compile(statements: Stmt[]) {
     binaryen.i32
   )
 
+  initItoa(module)
+
   createVarTable(statements)
   let varTypes = Array(varTable.size).fill(binaryen.i32)
   const body = program(module, statements)
@@ -138,28 +140,6 @@ function printStatement(module: binaryen.Module, stmt: PrintStmt) {
       )
     ),
   ])
-
-  // make this work for an evaluated expression that is a single integer
-  // console.log(expr)
-  let str = String(expr) + '\n'
-  // console.log(str)
-  let strArr = new TextEncoder().encode(str)
-  // console.log(strArr)
-  module.setMemory(1, 2, 'memory', [{ offset: module.i32.const(66), data: strArr }])
-
-  return module.block(null, [
-    module.i32.store(0, 4, module.i32.const(0), module.i32.const(66)),
-    module.i32.store(0, 4, module.i32.const(4), module.i32.const(strArr.length)),
-    module.drop(
-      module.call(
-        'write',
-        [module.i32.const(1), module.i32.const(0), module.i32.const(1), module.i32.const(92)],
-        binaryen.i32
-      )
-    ),
-  ])
-
-  // return module.call('print', [expr], binaryen.none)
 }
 
 function compileExpression(module: binaryen.Module, expression: Expr): binaryen.ExpressionRef {
@@ -302,4 +282,72 @@ function getFunVarTable(params: Token[]) {
   }
 
   return varMap
+}
+
+function initItoa(module: binaryen.Module) {
+  const locals = [binaryen.i32, binaryen.i32, binaryen.i32]
+
+  const body = module.block(null, [
+    module.if(
+      module.i32.eqz(module.local.get(0, binaryen.i32)),
+      module.block(null, [
+        module.i32.store8(0, 1, module.local.get(1, binaryen.i32), module.i32.const(48)),
+        module.return(module.i32.const(1)),
+      ])
+    ),
+
+    module.local.set(3, module.local.get(0, binaryen.i32)),
+    module.local.set(2, module.i32.const(0)),
+
+    module.loop(
+      'count_loop',
+      module.block(null, [
+        module.local.set(2, module.i32.add(module.local.get(2, binaryen.i32), module.i32.const(1))),
+        module.local.set(
+          3,
+          module.i32.div_u(module.local.get(3, binaryen.i32), module.i32.const(10))
+        ),
+        module.br_if(
+          'count_loop',
+          module.i32.ne(module.local.get(3, binaryen.i32), module.i32.const(0))
+        ),
+      ])
+    ),
+
+    module.loop(
+      'convert_loop',
+      module.block(null, [
+        module.local.set(4, module.i32.sub(module.local.get(4, binaryen.i32), module.i32.const(1))),
+
+        module.i32.store8(
+          0,
+          1,
+          module.i32.add(module.local.get(1, binaryen.i32), module.local.get(4, binaryen.i32)),
+          module.i32.add(
+            module.i32.const(48),
+            module.i32.rem_u(module.local.get(3, binaryen.i32), module.i32.const(10))
+          )
+        ),
+
+        module.local.set(
+          3,
+          module.i32.div_u(module.local.get(3, binaryen.i32), module.i32.const(10))
+        ),
+        module.br_if(
+          'convert_loop',
+          module.i32.ne(module.local.get(3, binaryen.i32), module.i32.const(0))
+        ),
+      ])
+    ),
+
+    module.return(module.local.get(2, binaryen.i32)),
+  ])
+
+  module.addFunction(
+    'itoa',
+    binaryen.createType([binaryen.i32, binaryen.i32]),
+    binaryen.i32,
+    locals,
+    body
+  )
 }
