@@ -7,7 +7,7 @@ import type Token from './Token'
 
 export default function compile(statements: Stmt[]) {
   const module = new binaryen.Module()
-  // module.setMemory(1, 2, 'memory')
+  module.setMemory(1, 2, 'memory')
 
   // Import print function
   // module.addFunctionImport(
@@ -116,8 +116,32 @@ function compileStatement(module: binaryen.Module, stmt: Stmt): binaryen.Express
 function printStatement(module: binaryen.Module, stmt: PrintStmt) {
   let expr = compileExpression(module, stmt.expression)
 
+  const bufferPtr = 66
+
+  return module.block(null, [
+    module.i32.store8(0, 0, module.i32.const(bufferPtr), expr),
+
+    // iovec structure
+    module.i32.store(0, 4, module.i32.const(0), module.i32.const(bufferPtr)),
+    module.i32.store(0, 4, module.i32.const(4), module.i32.const(50)),
+
+    module.drop(
+      module.call(
+        'write',
+        [
+          module.i32.const(1), // stdout
+          module.i32.const(0), // iovec start address
+          module.i32.const(1), // read this many iovecs
+          module.i32.const(92), // nwritten
+        ],
+        binaryen.i32
+      )
+    ),
+  ])
+
+  // make this work for an evaluated expression that is a single integer
   // console.log(expr)
-  let str = String('55') + '\n'
+  let str = String(expr) + '\n'
   // console.log(str)
   let strArr = new TextEncoder().encode(str)
   // console.log(strArr)

@@ -1,1 +1,1 @@
-print 55
+print 55 - 1
