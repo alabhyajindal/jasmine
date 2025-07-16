@@ -1,7 +1,7 @@
 import binaryen from 'binaryen'
 import type { BinaryExpr, CallExpr, Expr, LiteralExpr, UnaryExpr } from './Expr'
 import TokenType from './TokenType'
-import type { PrintStmt, Stmt } from './Stmt'
+import type { Stmt } from './Stmt'
 import { COMPILE_ERROR, reportError } from './error'
 import type Token from './Token'
 
@@ -32,14 +32,11 @@ export default function compile(statements: Stmt[]) {
   module.addFunction('main', binaryen.createType([]), binaryen.none, varTypes, body)
   module.addFunctionExport('main', '_start')
 
-  const wat = module.emitText()
-  // console.log(wat)
-
-  // Validate the module
   if (!module.validate()) {
     throw Error('Validation error.')
   }
 
+  const wat = module.emitText()
   return wat
 }
 
@@ -56,9 +53,6 @@ function compileStatement(module: binaryen.Module, stmt: Stmt): binaryen.Express
   switch (stmt.type) {
     case 'ExprStmt': {
       return compileExpression(module, stmt.expression)
-    }
-    case 'PrintStmt': {
-      return printStatement(module, stmt)
     }
     case 'VariableStmt': {
       let expr = compileExpression(module, stmt.initializer)
@@ -112,9 +106,7 @@ function compileStatement(module: binaryen.Module, stmt: Stmt): binaryen.Express
   }
 }
 
-function printStatement(module: binaryen.Module, stmt: PrintStmt) {
-  let expr = compileExpression(module, stmt.expression)
-
+function printExpression(module: binaryen.Module, expr: binaryen.ExpressionRef) {
   const bufferPtr = 66
 
   return module.block(null, [
@@ -227,6 +219,10 @@ function unaryExpression(module: binaryen.Module, expression: UnaryExpr): binary
 function callExpression(module: binaryen.Module, expression: CallExpr): binaryen.ExpressionRef {
   let name = expression.callee.name.lexeme
   let args = expression.args.map((arg) => compileExpression(module, arg))
+
+  if (name == 'print') {
+    return printExpression(module, args[0] as number)
+  }
 
   // the return type of call here must match the return type of the defined function. to do this we would need to look up the function we are calling and then get the return type of it from there.
 

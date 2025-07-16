@@ -2,7 +2,7 @@ import type { Expr } from './Expr'
 import type Token from './Token'
 import type TokenType from './TokenType'
 
-export type Stmt = BlockStmt | ExprStmt | PrintStmt | VariableStmt | IfStmt | FunDecl | ReturnStmt
+export type Stmt = BlockStmt | ExprStmt | VariableStmt | IfStmt | FunDecl | ReturnStmt
 
 export interface BlockStmt {
   type: 'BlockStmt'
@@ -27,11 +27,6 @@ export interface IfStmt {
   condition: Expr
   thenBranch: Stmt
   elseBranch: Stmt | null
-}
-
-export interface PrintStmt {
-  type: 'PrintStmt'
-  expression: Expr
 }
 
 export interface ReturnStmt {

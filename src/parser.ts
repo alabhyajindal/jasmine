@@ -1,15 +1,6 @@
 import { PARSE_ERROR, reportError } from './error'
 import type { BinaryExpr, Expr, LiteralExpr, UnaryExpr, VariableExpr } from './Expr'
-import type {
-  BlockStmt,
-  ExprStmt,
-  FunDecl,
-  IfStmt,
-  PrintStmt,
-  ReturnStmt,
-  Stmt,
-  VariableStmt,
-} from './Stmt'
+import type { BlockStmt, ExprStmt, FunDecl, IfStmt, ReturnStmt, Stmt, VariableStmt } from './Stmt'
 import type Token from './Token'
 import TokenType from './TokenType'
 
@@ -28,9 +19,6 @@ export default function parse(t: Token[]) {
 }
 
 function statement() {
-  if (match(TokenType.PRINT)) {
-    return printStatement()
-  }
   if (match(TokenType.LET)) {
     return variableStatement()
   }
@@ -48,12 +36,6 @@ function statement() {
   }
 
   return expressionStatement()
-}
-
-function printStatement(): PrintStmt {
-  let value = expression()
-  consume(TokenType.NEWLINE, 'Expect newline after expression.')
-  return { expression: value, type: 'PrintStmt' }
 }
 
 function variableStatement(): VariableStmt {
@@ -200,6 +182,11 @@ function call(): Expr {
       do {
         args.push(expression())
       } while (match(TokenType.COMMA))
+    }
+    if (expr.type == 'VariableExpr' && expr.name.lexeme == 'print') {
+      if (args.length != 1) {
+        reportError(peek(), 'Print expects a single argument.', PARSE_ERROR)
+      }
     }
 
     consume(TokenType.RIGHT_PAREN, "Expect ')' after arguments.")

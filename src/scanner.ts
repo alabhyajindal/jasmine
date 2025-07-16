@@ -12,7 +12,6 @@ const keywords: Record<string, TokenType> = {
   return: TokenType.RETURN,
   true: TokenType.TRUE,
   while: TokenType.WHILE,
-  print: TokenType.PRINT,
 }
 
 const types: Record<string, TokenType> = {
