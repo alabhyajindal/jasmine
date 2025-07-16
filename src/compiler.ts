@@ -269,12 +269,12 @@ function createVarTable(statements: Stmt[]) {
   varTable = varMap
 }
 
-function getFunVarTable(params: Token[]) {
+function getFunVarTable(params: { name: string; type: TokenType }[]) {
   let varCount = 0
   let varMap = new Map()
 
   for (let param of params) {
-    let varName = param.lexeme
+    let varName = param.name
     varMap.set(varName, { index: varCount++ })
   }
 
