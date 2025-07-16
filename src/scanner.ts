@@ -17,6 +17,7 @@ const keywords: Record<string, TokenType> = {
 
 const types: Record<string, TokenType> = {
   int: TokenType.TYPE_INT,
+  nil: TokenType.TYPE_NIL,
 }
 
 let start = 0

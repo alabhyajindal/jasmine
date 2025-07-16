@@ -94,21 +94,24 @@ function funDeclaration(): FunDecl {
   consume(TokenType.LEFT_PAREN, "Expect '(' after function name.")
 
   let params = []
-  // Get the first parameter if no right paren
+
   if (!check(TokenType.RIGHT_PAREN)) {
-    params.push(consume(TokenType.IDENTIFER, 'Expect parameter name.'))
+    do {
+      let name = consume(TokenType.IDENTIFER, 'Expect parameter name.').lexeme
+      match(TokenType.COLON)
+      let type = consume([TokenType.TYPE_INT, TokenType.TYPE_NIL], 'Expect parameter type.').type
+      params.push({ name, type })
+    } while (match(TokenType.COMMA))
   }
-  // Get the remaining parameters
-  while (peek().type != TokenType.RIGHT_PAREN) {
-    match(TokenType.COMMA)
-    params.push(consume(TokenType.IDENTIFER, 'Expect parameter name.'))
-  }
+
   consume(TokenType.RIGHT_PAREN, "Expect ')' after parameters.")
-
   consume(TokenType.ARROW, "Expect '->' after parameters.")
-  let returnType = consume(TokenType.TYPE_INT, "Expect return type after '->'.").type
-  consume(TokenType.LEFT_BRACE, "Expect '{' before function body.")
+  let returnType = consume(
+    [TokenType.TYPE_INT, TokenType.TYPE_NIL],
+    "Expect return type after '->'."
+  ).type
 
+  consume(TokenType.LEFT_BRACE, "Expect '{' before function body.")
   let body = blockStatement()
   return { name, params, returnType, body, type: 'FunDecl' }
 }
@@ -263,9 +266,18 @@ function previous() {
   return tokens[current - 1]!
 }
 
-function consume(type: TokenType, msg: string) {
-  if (check(type)) {
-    return advance()
+function consume(type: TokenType[] | TokenType, msg: string) {
+  if (Array.isArray(type)) {
+    for (let t of type) {
+      if (check(t)) {
+        return advance()
+      }
+    }
+    reportError(peek(), msg, PARSE_ERROR)
+  } else {
+    if (check(type)) {
+      return advance()
+    }
+    reportError(peek(), msg, PARSE_ERROR)
   }
-  reportError(peek(), msg, PARSE_ERROR)
 }
