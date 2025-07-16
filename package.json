@@ -4,8 +4,8 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "watch": "bun --watch src/main.ts source.txt",
-    "compile": "bun src/main.ts source.txt",
+    "watch": "bun --watch src/main.ts source.jas",
+    "compile": "bun src/main.ts source.jas",
     "build": "bun run compile && wasm-merge build/main.wat main lib/utils.wat utils -o build/a.wat --enable-multimemory --emit-text && wasmtime build/a.wat"
   },
   "devDependencies": {

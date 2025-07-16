@@ -1,11 +1,11 @@
 import scan from './scanner'
 import parse from './parser'
 import compile from './compiler'
-import sphereSource from '../source.txt' // Included to reload Bun when the source text changes
+// @ts-ignore Do not look for type declarations for the source language
+import source from '../source.jas'
 import { COMPILE_ERROR, PARSE_ERROR } from './error'
-import { $ } from 'bun'
 
-let _ = sphereSource
+let _ = source
 
 const args = Bun.argv
 
