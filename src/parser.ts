@@ -93,7 +93,7 @@ function funDeclaration(): FunDecl {
   let name = consume(TokenType.IDENTIFER, 'Expect function name.')
   consume(TokenType.LEFT_PAREN, "Expect '(' after function name.")
 
-  let params = []
+  let params: { name: string; type: TokenType.TYPE_INT | TokenType.TYPE_NIL }[] = []
 
   if (!check(TokenType.RIGHT_PAREN)) {
     do {
@@ -109,7 +109,7 @@ function funDeclaration(): FunDecl {
   let returnType = consume(
     [TokenType.TYPE_INT, TokenType.TYPE_NIL],
     "Expect return type after '->'."
-  ).type
+  ).type as TokenType.TYPE_INT | TokenType.TYPE_NIL
 
   consume(TokenType.LEFT_BRACE, "Expect '{' before function body.")
   let body = blockStatement()
@@ -266,18 +266,13 @@ function previous() {
   return tokens[current - 1]!
 }
 
-function consume(type: TokenType[] | TokenType, msg: string) {
-  if (Array.isArray(type)) {
-    for (let t of type) {
-      if (check(t)) {
-        return advance()
-      }
+function consume<T extends TokenType>(type: T[] | T, msg: string): Token & { type: T } {
+  const types = Array.isArray(type) ? type : [type]
+
+  for (let t of types) {
+    if (check(t)) {
+      return advance() as Token & { type: T }
     }
-    reportError(peek(), msg, PARSE_ERROR)
-  } else {
-    if (check(type)) {
-      return advance()
-    }
-    reportError(peek(), msg, PARSE_ERROR)
   }
+  reportError(peek(), msg, PARSE_ERROR)
 }
