@@ -2,7 +2,7 @@ import scan from './scanner'
 import parse from './parser'
 import compile from './compiler'
 // @ts-ignore Do not look for type declarations for the source language
-import source from '../source.jas'
+import source from '../__.jas'
 import { COMPILE_ERROR, PARSE_ERROR } from './error'
 
 let _ = source
