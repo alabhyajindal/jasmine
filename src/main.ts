@@ -48,22 +48,4 @@ async function run(source: string) {
   }
 
   Bun.write('build/main.wat', wat)
-
-  // await $`wasmtime build/main.wat`
-
-  // Define the imports that WebAssembly expects
-  // const imports = {
-  //   console: {
-  //     i32: (value: number) => {
-  //       console.log(value)
-  //     },
-  //   },
-  // }
-
-  // // Example usage with the WebAssembly API
-  // const compiled = new WebAssembly.Module(wasmBinary)
-  // const instance = new WebAssembly.Instance(compiled, imports)
-
-  // // @ts-expect-error: Exported functions are available under exports
-  // instance.exports._start()
 }

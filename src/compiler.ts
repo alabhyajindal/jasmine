@@ -9,15 +9,6 @@ export default function compile(statements: Stmt[]) {
   const module = new binaryen.Module()
   module.setMemory(1, 2, 'memory')
 
-  // Import print function
-  // module.addFunctionImport(
-  //   'print',
-  //   'console',
-  //   'i32',
-  //   binaryen.createType([binaryen.i32]),
-  //   binaryen.none
-  // )
-
   module.addFunctionImport(
     'write',
     'wasi_snapshot_preview1',
@@ -33,8 +24,6 @@ export default function compile(statements: Stmt[]) {
     binaryen.createType([binaryen.i32, binaryen.i32]),
     binaryen.i32
   )
-
-  // initItoa(module)
 
   createVarTable(statements)
   let varTypes = Array(varTable.size).fill(binaryen.i32)
@@ -290,95 +279,4 @@ function getFunVarTable(params: Token[]) {
   }
 
   return varMap
-}
-
-function initItoa(module: binaryen.Module) {
-  // Parameter indices for readability
-  const NUM_PARAM = 0
-  const BUFFER_PARAM = 1
-
-  // Local variable indices
-  const LENGTH_LOCAL = 2
-  const TEMP_LOCAL = 3
-  const DIGIT_LOCAL = 4
-
-  const locals = [binaryen.i32, binaryen.i32, binaryen.i32]
-
-  const body = module.block(null, [
-    module.if(
-      module.i32.eqz(module.local.get(NUM_PARAM, binaryen.i32)),
-      module.block(null, [
-        module.i32.store8(0, 1, module.local.get(BUFFER_PARAM, binaryen.i32), module.i32.const(48)),
-        module.return(module.i32.const(1)),
-      ])
-    ),
-
-    // Initialize temp to original number
-    module.local.set(TEMP_LOCAL, module.local.get(NUM_PARAM, binaryen.i32)),
-    module.local.set(LENGTH_LOCAL, module.i32.const(0)),
-
-    // Count digits
-    module.loop(
-      'count_loop',
-      module.block(null, [
-        module.local.set(
-          LENGTH_LOCAL,
-          module.i32.add(module.local.get(LENGTH_LOCAL, binaryen.i32), module.i32.const(1))
-        ),
-        module.local.set(
-          TEMP_LOCAL,
-          module.i32.div_u(module.local.get(TEMP_LOCAL, binaryen.i32), module.i32.const(10))
-        ),
-        module.br_if(
-          'count_loop',
-          module.i32.ne(module.local.get(TEMP_LOCAL, binaryen.i32), module.i32.const(0))
-        ),
-      ])
-    ),
-
-    // Reset temp to original number and initialize digit counter
-    module.local.set(TEMP_LOCAL, module.local.get(NUM_PARAM, binaryen.i32)),
-    module.local.set(DIGIT_LOCAL, module.local.get(LENGTH_LOCAL, binaryen.i32)),
-
-    // Convert to ASCII
-    module.loop(
-      'convert_loop',
-      module.block(null, [
-        module.local.set(
-          DIGIT_LOCAL,
-          module.i32.sub(module.local.get(DIGIT_LOCAL, binaryen.i32), module.i32.const(1))
-        ),
-        module.i32.store8(
-          0,
-          1,
-          module.i32.add(
-            module.local.get(BUFFER_PARAM, binaryen.i32),
-            module.local.get(DIGIT_LOCAL, binaryen.i32)
-          ),
-          module.i32.add(
-            module.i32.const(48),
-            module.i32.rem_u(module.local.get(TEMP_LOCAL, binaryen.i32), module.i32.const(10))
-          )
-        ),
-        module.local.set(
-          TEMP_LOCAL,
-          module.i32.div_u(module.local.get(TEMP_LOCAL, binaryen.i32), module.i32.const(10))
-        ),
-        module.br_if(
-          'convert_loop',
-          module.i32.ne(module.local.get(TEMP_LOCAL, binaryen.i32), module.i32.const(0))
-        ),
-      ])
-    ),
-
-    module.return(module.local.get(LENGTH_LOCAL, binaryen.i32)),
-  ])
-
-  module.addFunction(
-    'itoa',
-    binaryen.createType([binaryen.i32, binaryen.i32]),
-    binaryen.i32,
-    locals,
-    body
-  )
 }
