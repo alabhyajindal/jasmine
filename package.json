@@ -4,7 +4,9 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "compile": "(cd playground && rm a.wasm -f && wat2wasm a.wat && bun compile.js)"
+    "watch": "bun --watch src/main.ts source.txt",
+    "compile": "bun src/main.ts source.txt",
+    "build": "bun run compile && wasm-merge build/main.wat main lib/utils.wat utils -o build/a.wat --enable-multimemory --emit-text && wasmtime build/a.wat"
   },
   "devDependencies": {
     "@types/bun": "latest"
