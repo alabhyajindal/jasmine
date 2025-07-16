@@ -49,7 +49,7 @@ async function run(source: string) {
 
   Bun.write('build/main.wat', wat)
 
-  await $`wasmtime build/main.wat`
+  // await $`wasmtime build/main.wat`
 
   // Define the imports that WebAssembly expects
   // const imports = {

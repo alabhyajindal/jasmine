@@ -26,14 +26,22 @@ export default function compile(statements: Stmt[]) {
     binaryen.i32
   )
 
-  initItoa(module)
+  module.addFunctionImport(
+    'itoa',
+    'utils',
+    'itoa',
+    binaryen.createType([binaryen.i32, binaryen.i32]),
+    binaryen.i32
+  )
+
+  // initItoa(module)
 
   createVarTable(statements)
   let varTypes = Array(varTable.size).fill(binaryen.i32)
   const body = program(module, statements)
 
-  module.addFunction('_start', binaryen.createType([]), binaryen.none, varTypes, body)
-  module.addFunctionExport('_start', '_start')
+  module.addFunction('main', binaryen.createType([]), binaryen.none, varTypes, body)
+  module.addFunctionExport('main', '_start')
 
   const wat = module.emitText()
   // console.log(wat)
