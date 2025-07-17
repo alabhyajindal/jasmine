@@ -16,6 +16,8 @@ for (const fileName of fileNames) {
     let statements = parse(tokens)
     let wat = compile(statements)
 
-    await $`bun build.ts`.quiet()
+    let res = await $`bun build.ts`.text()
+    // read the first commend from the file - that is what the stdout should be compared against
+    console.log('yoo', res)
   })
 }
