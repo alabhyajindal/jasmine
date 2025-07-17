@@ -74,7 +74,13 @@ function scanToken() {
       addToken(TokenType.STAR)
       break
     case '/':
-      addToken(TokenType.SLASH)
+      if (match('/')) {
+        while (peek() != '\n' && !isAtEnd()) {
+          advance()
+        }
+      } else {
+        addToken(TokenType.SLASH)
+      }
       break
     case '!':
       match('=') ? addToken(TokenType.BANG_EQUAL) : addToken(TokenType.BANG)
@@ -87,11 +93,6 @@ function scanToken() {
       break
     case '>':
       match('=') ? addToken(TokenType.GREATER_EQUAL) : addToken(TokenType.GREATER)
-      break
-    case '#':
-      while (peek() != '\n' && !isAtEnd()) {
-        advance()
-      }
       break
     case ' ':
     case '\r':

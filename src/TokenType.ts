@@ -11,7 +11,6 @@ enum TokenType {
   MINUS = 'MINUS',
   STAR = 'STAR',
   SLASH = 'SLASH',
-  HASH = 'HASH',
 
   // One or two character tokens
   BANG = 'BANG',
