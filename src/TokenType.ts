@@ -47,7 +47,7 @@ enum TokenType {
   STRING = 'STRING',
 
   //   Misc
-  NEWLINE = 'NEWLINE',
+  SEMICOLON = 'SEMICOLON',
   EOF = 'EOF',
 }
 

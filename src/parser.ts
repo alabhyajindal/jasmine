@@ -42,7 +42,7 @@ function variableStatement(): VariableStmt {
   let name = consume(TokenType.IDENTIFER, 'Expect variable name.')
   consume(TokenType.EQUAL, 'Expect equal sign.')
   let initializer = expression()
-  consume(TokenType.NEWLINE, 'Expect newline after expression.')
+  consume(TokenType.SEMICOLON, 'Expect semicolon after expression.')
   return { name, initializer, type: 'VariableStmt' }
 }
 
@@ -100,17 +100,17 @@ function funDeclaration(): FunDecl {
 
 function returnStatement(): ReturnStmt {
   let value = null
-  if (!check(TokenType.NEWLINE)) {
+  if (!check(TokenType.SEMICOLON)) {
     value = expression()
   }
-  consume(TokenType.NEWLINE, 'Expect newline after expression.')
+  consume(TokenType.SEMICOLON, 'Expect semicolon after expression.')
 
   return { value: value as Expr, type: 'ReturnStmt' }
 }
 
 function expressionStatement(): ExprStmt {
   let expr = expression()
-  consume(TokenType.NEWLINE, 'Expect newline after expression.')
+  consume(TokenType.SEMICOLON, 'Expect semicolon after expression.')
   return { expression: expr, type: 'ExprStmt' }
 }
 

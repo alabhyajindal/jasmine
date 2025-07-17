@@ -48,19 +48,12 @@ function scanToken() {
       break
     case '{':
       addToken(TokenType.LEFT_BRACE)
-      // Skip newlines after entering a block
-      while (peek() == '\n') {
-        advance()
-        line++
-      }
       break
     case '}':
       addToken(TokenType.RIGHT_BRACE)
-      // Skip new lines after exiting a block
-      while (peek() == '\n') {
-        advance()
-        line++
-      }
+      break
+    case ';':
+      addToken(TokenType.SEMICOLON)
       break
     case ':':
       addToken(TokenType.COLON)
@@ -99,16 +92,12 @@ function scanToken() {
       while (peek() != '\n' && !isAtEnd()) {
         advance()
       }
-      // Advance again to skip the new line character
-      advance()
-      line++
       break
     case ' ':
     case '\r':
     case '\t':
       break
     case '\n':
-      addToken(TokenType.NEWLINE)
       line++
       break
     case "'":
