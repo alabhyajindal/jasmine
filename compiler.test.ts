@@ -10,7 +10,8 @@ const fileNames = await readdir(testDir)
 
 for (const fileName of fileNames) {
   test(`${fileName}`, async () => {
-    let sourceText = await Bun.file(`${testDir}/${fileName}`).text()
+    let filePath = testDir + '/' + fileName
+    let sourceText = await Bun.file(filePath).text()
 
     let expected = sourceText.split('\n')[0]!.substring(2).trim()
 
@@ -18,7 +19,7 @@ for (const fileName of fileNames) {
     let statements = parse(tokens)
     let wat = compile(statements)
 
-    let out = await $`bun build.ts -- ${fileName}`.text()
+    let out = await $`bun make ${filePath}`.text()
     expect(out).toBe(expected)
   })
 }

@@ -6,7 +6,7 @@
   "scripts": {
     "watch": "bun --watch src/main.ts",
     "compile": "bun src/main.ts",
-    "build": "bun build.ts"
+    "make": "./make.sh"
   },
   "devDependencies": {
     "@types/bun": "latest"
