@@ -108,13 +108,12 @@ function compileStatement(module: binaryen.Module, stmt: Stmt): binaryen.Express
 
 function printExpression(module: binaryen.Module, expr: binaryen.ExpressionRef) {
   const bufferPtr = 66
+  let strLen = module.call('itoa', [expr, module.i32.const(bufferPtr)], binaryen.i32)
 
   return module.block(null, [
-    module.drop(module.call('itoa', [expr, module.i32.const(bufferPtr)], binaryen.i32)),
-
     // iovec structure
     module.i32.store(0, 4, module.i32.const(0), module.i32.const(bufferPtr)),
-    module.i32.store(0, 4, module.i32.const(4), module.i32.const(50)),
+    module.i32.store(0, 4, module.i32.const(4), strLen),
 
     module.drop(
       module.call(
