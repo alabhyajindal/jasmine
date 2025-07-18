@@ -13,7 +13,11 @@
     (if (i32.eqz (local.get $num))
     (then
     (i32.store8 (local.get $buffer) (i32.const 48))
-    (return (i32.const 1))
+
+    ;; add a new line character at the end
+    (i32.store8 (i32.add (local.get $buffer) (i32.const 1)) (i32.const 10))
+    ;; length of the string, 1 for the char 0 +1 for the newline char
+    (return (i32.const 2))
     ))
 
     ;; count digit length
