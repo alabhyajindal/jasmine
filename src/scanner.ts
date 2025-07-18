@@ -1,6 +1,7 @@
 import type Token from './Token'
 import TokenType from './TokenType'
 import type { ValueType } from './ValueType'
+import { reportError } from './error'
 
 const keywords: Record<string, TokenType> = {
   and: TokenType.AND,
@@ -163,12 +164,16 @@ function number() {
 
 function string() {
   while (peek() != '"') {
+    if (!isAlpha(peek())) {
+      console.error(`[line ${line}]: String can only contain alphabets.`)
+      throw Error()
+    }
     advance()
   }
 
   if (isAtEnd()) {
-    reportError('Unterminated string.')
-    return
+    console.error(`[line ${line}]: Unterminated string.`)
+    throw Error()
   }
 
   advance()
