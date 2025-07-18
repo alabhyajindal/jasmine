@@ -219,7 +219,7 @@ function callExpression(module: binaryen.Module, expression: CallExpr): binaryen
   let name = expression.callee.name.lexeme
   let args = expression.args.map((arg) => compileExpression(module, arg))
 
-  if (name == 'print') {
+  if (name == 'println') {
     return printExpression(module, args[0] as number)
   }
 

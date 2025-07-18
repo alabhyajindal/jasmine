@@ -183,9 +183,9 @@ function call(): Expr {
         args.push(expression())
       } while (match(TokenType.COMMA))
     }
-    if (expr.type == 'VariableExpr' && expr.name.lexeme == 'print') {
+    if (expr.type == 'VariableExpr' && expr.name.lexeme == 'println') {
       if (args.length != 1) {
-        reportError(peek(), 'Print expects a single argument.', PARSE_ERROR)
+        reportError(peek(), 'println expects a single argument.', PARSE_ERROR)
       }
     }
 
