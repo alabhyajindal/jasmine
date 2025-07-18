@@ -3,6 +3,7 @@ import type { BinaryExpr, Expr, LiteralExpr, UnaryExpr, VariableExpr } from './E
 import type { BlockStmt, ExprStmt, FunDecl, IfStmt, ReturnStmt, Stmt, VariableStmt } from './Stmt'
 import type Token from './Token'
 import TokenType from './TokenType'
+import { ValueTypes, type ValueType } from './ValueType'
 
 // Initializing variables
 let current = 0
@@ -41,7 +42,7 @@ function statement() {
 function variableStatement(): VariableStmt {
   let name = consume(TokenType.IDENTIFER, 'Expect variable name.')
   consume(TokenType.COLON, 'Expect colon.')
-  let varType = consume([TokenType.TYPE_INT, TokenType.TYPE_NIL], 'Expect variable type.')
+  let varType = consume(ValueTypes, 'Expect variable type.')
 
   consume(TokenType.EQUAL, 'Expect equal sign.')
   let initializer = expression()
@@ -75,23 +76,20 @@ function funDeclaration(): FunDecl {
   let name = consume(TokenType.IDENTIFER, 'Expect function name.')
   consume(TokenType.LEFT_PAREN, "Expect '(' after function name.")
 
-  let params: { name: string; type: TokenType.TYPE_INT | TokenType.TYPE_NIL }[] = []
+  let params: { name: string; type: ValueType }[] = []
 
   if (!check(TokenType.RIGHT_PAREN)) {
     do {
       let name = consume(TokenType.IDENTIFER, 'Expect parameter name.').lexeme
       match(TokenType.COLON)
-      let type = consume([TokenType.TYPE_INT, TokenType.TYPE_NIL], 'Expect parameter type.').type
+      let type = consume(ValueTypes, 'Expect parameter type.').type
       params.push({ name, type })
     } while (match(TokenType.COMMA))
   }
 
   consume(TokenType.RIGHT_PAREN, "Expect ')' after parameters.")
   consume(TokenType.ARROW, "Expect '->' after parameters.")
-  let returnType = consume(
-    [TokenType.TYPE_INT, TokenType.TYPE_NIL],
-    "Expect return type after '->'."
-  ).type as TokenType.TYPE_INT | TokenType.TYPE_NIL
+  let returnType = consume(ValueTypes, "Expect return type after '->'.").type
 
   consume(TokenType.LEFT_BRACE, "Expect '{' before function body.")
   let body = blockStatement()
@@ -253,7 +251,7 @@ function previous() {
   return tokens[current - 1]!
 }
 
-function consume<T extends TokenType>(type: T[] | T, msg: string): Token & { type: T } {
+function consume<T extends TokenType>(type: readonly T[] | T, msg: string): Token & { type: T } {
   const types = Array.isArray(type) ? type : [type]
 
   for (let t of types) {

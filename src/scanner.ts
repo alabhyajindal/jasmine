@@ -1,5 +1,6 @@
 import type Token from './Token'
 import TokenType from './TokenType'
+import type { ValueType } from './ValueType'
 
 const keywords: Record<string, TokenType> = {
   and: TokenType.AND,
@@ -14,9 +15,10 @@ const keywords: Record<string, TokenType> = {
   while: TokenType.WHILE,
 }
 
-const types: Record<string, TokenType> = {
+const types: Record<string, ValueType> = {
   int: TokenType.TYPE_INT,
   nil: TokenType.TYPE_NIL,
+  str: TokenType.TYPE_STR,
 }
 
 let start = 0
@@ -101,7 +103,7 @@ function scanToken() {
     case '\n':
       line++
       break
-    case "'":
+    case '"':
       string()
       break
     default:
@@ -160,7 +162,7 @@ function number() {
 }
 
 function string() {
-  while (peek() != "'") {
+  while (peek() != '"') {
     advance()
   }
 

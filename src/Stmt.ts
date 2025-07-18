@@ -1,6 +1,6 @@
 import type { Expr } from './Expr'
 import type Token from './Token'
-import type TokenType from './TokenType'
+import type { ValueType } from './ValueType'
 
 export type Stmt = BlockStmt | ExprStmt | VariableStmt | IfStmt | FunDecl | ReturnStmt
 
@@ -17,8 +17,8 @@ export interface ExprStmt {
 export interface FunDecl {
   type: 'FunDecl'
   name: Token
-  params: Array<{ name: string; type: TokenType.TYPE_INT | TokenType.TYPE_NIL }>
-  returnType: TokenType.TYPE_INT | TokenType.TYPE_NIL
+  params: Array<{ name: string; type: ValueType }>
+  returnType: ValueType
   body: BlockStmt
 }
 
@@ -38,5 +38,5 @@ export interface VariableStmt {
   type: 'VariableStmt'
   name: Token
   initializer: Expr
-  valueType: TokenType.TYPE_INT | TokenType.TYPE_NIL
+  valueType: ValueType
 }
