@@ -164,10 +164,6 @@ function number() {
 
 function string() {
   while (peek() != '"') {
-    if (!isAlpha(peek())) {
-      console.error(`[line ${line}]: String can only contain alphabets.`)
-      throw Error()
-    }
     advance()
   }
 
