@@ -58,10 +58,7 @@ function blockStatement(): BlockStmt {
 }
 
 function ifStatement(): IfStmt {
-  consume(TokenType.LEFT_PAREN, "Expect '(' after 'if'.")
   let condition = expression()
-  consume(TokenType.RIGHT_PAREN, "Expect ')' after if condition.")
-
   let thenBranch = statement()
   let elseBranch = null
   if (match(TokenType.ELSE)) {
