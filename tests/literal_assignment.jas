@@ -3,10 +3,10 @@
 // 5
 
 let a: int = 42;
-print(a);
+println(a);
 
 let b: int = 1 + 2;
-print(b);
+println(b);
 
 let c: int = (5);
-print(c);
+println(c);

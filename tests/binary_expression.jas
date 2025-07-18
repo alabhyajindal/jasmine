@@ -8,12 +8,12 @@
 // 10
 // 0
 
-print(2 + 3);
-print(10 - 8);
-print(10 * 10);
-print(10 / 2);
+println(2 + 3);
+println(10 - 8);
+println(10 * 10);
+println(10 / 2);
 
-print(10 + 5 + 5);
-print(5 + 2 * 10);
-print(5 / 5 * 10);
-print(5 * 10 / 10 - 5);
+println(10 + 5 + 5);
+println(5 + 2 * 10);
+println(5 / 5 * 10);
+println(5 * 10 / 10 - 5);
