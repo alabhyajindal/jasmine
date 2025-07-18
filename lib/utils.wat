@@ -40,7 +40,9 @@
         (br_if $convert_loop (i32.ne (local.get $temp) (i32.const 0)))
     )
 
-
-    (local.get $length)
+    ;; add a newline character at the end
+    (i32.store8 (i32.add (local.get $buffer) (local.get $length)) (i32.const 10))
+    ;; return the length of the string + 1 for the newline char
+    (i32.add (local.get $length) (i32.const 1))
 )
 )
