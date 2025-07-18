@@ -22,11 +22,7 @@ for (const fileName of fileNames) {
 
     let out: string[] = (await $`bun make ${filePath}`.text()).trim().split('\n')
 
-    expect(out.length).toBe(expected.length)
-
-    for (let [i, expectedValue] of expected.entries()) {
-      expect(out[i]).toBe(expectedValue)
-    }
+    expect(out).toEqual(expected)
   })
 }
 
