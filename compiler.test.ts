@@ -14,13 +14,25 @@ for (const fileName of fileNames) {
     let filePath = testDir + '/' + fileName
     let sourceText = await Bun.file(filePath).text()
 
-    let expected = sourceText.split('\n')[0]!.substring(2).trim()
+    let expected: string[] = getExpected(sourceText)
 
     let tokens = scan(sourceText)
     let statements = parse(tokens)
     let wat = compile(statements)
 
-    let out = await $`bun make ${filePath}`.text()
-    expect(out).toBe(expected)
+    let out: string[] = (await $`bun make ${filePath}`.text()).trim().split('\n')
+
+    expect(out.length).toBe(expected.length)
+
+    for (let [i, expectedValue] of expected.entries()) {
+      expect(out[i]).toBe(expectedValue)
+    }
   })
+}
+
+function getExpected(sourceText: string): string[] {
+  let lines = sourceText.split('\n')
+  let comments = lines.filter((line) => line.substring(0, 2) == '//')
+  let expected = comments.map((comment) => comment.substring(2).trim())
+  return expected
 }
