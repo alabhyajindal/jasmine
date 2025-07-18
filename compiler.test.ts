@@ -7,6 +7,7 @@ import { $ } from 'bun'
 
 const testDir = './tests'
 const fileNames = await readdir(testDir)
+fileNames.sort()
 
 for (const fileName of fileNames) {
   test(`${fileName}`, async () => {
