@@ -1,0 +1,4 @@
+// 42
+
+let a: int = 42;
+print(a);

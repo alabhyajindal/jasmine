@@ -38,4 +38,5 @@ export interface VariableStmt {
   type: 'VariableStmt'
   name: Token
   initializer: Expr
+  valueType: TokenType.TYPE_INT | TokenType.TYPE_NIL
 }

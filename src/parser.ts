@@ -40,10 +40,13 @@ function statement() {
 
 function variableStatement(): VariableStmt {
   let name = consume(TokenType.IDENTIFER, 'Expect variable name.')
+  consume(TokenType.COLON, 'Expect colon.')
+  let varType = consume([TokenType.TYPE_INT, TokenType.TYPE_NIL], 'Expect variable type.')
+
   consume(TokenType.EQUAL, 'Expect equal sign.')
   let initializer = expression()
   consume(TokenType.SEMICOLON, 'Expect semicolon after expression.')
-  return { name, initializer, type: 'VariableStmt' }
+  return { name, initializer, type: 'VariableStmt', valueType: varType.type }
 }
 
 function blockStatement(): BlockStmt {
