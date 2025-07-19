@@ -106,9 +106,20 @@ function compileStatement(module: binaryen.Module, stmt: Stmt): binaryen.Express
   }
 }
 
-function printExpression(module: binaryen.Module, expr: binaryen.ExpressionRef) {
+function printExpression(
+  module: binaryen.Module,
+  expr?: binaryen.ExpressionRef,
+  strLen?: binaryen.ExpressionRef
+) {
   const bufferPtr = 66
-  let strLen = module.call('itoa', [expr, module.i32.const(bufferPtr)], binaryen.i32)
+  if (expr && !strLen) {
+    strLen = module.call('itoa', [expr, module.i32.const(bufferPtr)], binaryen.i32)
+  }
+
+  // ewww - when we print an int we pass expr, when we print a string we pass strlen - both are never passed - modify the function so we don't need this check below
+  if (!strLen) {
+    throw Error('Failed to compute strLen')
+  }
 
   return module.block(null, [
     // iovec structure
@@ -216,37 +227,43 @@ function unaryExpression(module: binaryen.Module, expression: UnaryExpr): binary
 }
 
 function callExpression(module: binaryen.Module, expression: CallExpr): binaryen.ExpressionRef {
-  let name = expression.callee.name.lexeme
-  let args = expression.args.map((arg) => compileExpression(module, arg))
+  let fnName = expression.callee.name.lexeme
 
-  if (name == 'println') {
-    return printExpression(module, args[0] as number)
+  if (fnName == 'println') {
+    let argExpr = expression.args[0]!
+    if (argExpr.type === 'LiteralExpr' && typeof argExpr.value === 'string') {
+      argExpr.value = argExpr.value + '\n'
+      let str = argExpr.value
+      let strLen = new TextEncoder().encode(str).length
+
+      return module.block(null, [
+        compileExpression(module, argExpr),
+        printExpression(module, undefined, module.i32.const(strLen)),
+      ])
+    } else if (argExpr.type == 'LiteralExpr' && typeof argExpr.value == 'number') {
+      return printExpression(module, compileExpression(module, argExpr))
+    }
   }
 
-  // the return type of call here must match the return type of the defined function. to do this we would need to look up the function we are calling and then get the return type of it from there.
-
-  return module.call(name, args, binaryen.i32)
+  // User defined functions
+  let args = expression.args.map((arg) => compileExpression(module, arg))
+  return module.call(fnName, args, binaryen.i32)
 }
 
 let stringTable: Map<string, { start: number; end: number }> = new Map()
 
 function stringExpression(module: binaryen.Module, expr: LiteralExpr): binaryen.ExpressionRef {
   let name = expr.value as string
-  console.log(name)
-  let strIndex = stringTable.get(name)
-  if (strIndex) {
-    return module.i32.const(strIndex.start)
-  } else if (stringTable.size > 0) {
-    let prevStr = [...stringTable.keys()].pop()!
-    let prevPos = stringTable.get(prevStr)!
+  let instrs = []
 
-    let newPos = { start: prevPos.end + 1, end: name.length }
-    stringTable.set(name, newPos)
-    return module.i32.const(newPos.start)
-  } else {
-    stringTable.set(name, { start: 0, end: name.length })
-    return module.i32.const(0)
+  let str = name
+  let strArr = new TextEncoder().encode(str)
+
+  for (let [i, charCode] of strArr.entries()) {
+    instrs.push(module.i32.store8(0, 1, module.i32.const(66 + i), module.i32.const(charCode)))
   }
+
+  return module.block(null, instrs)
 }
 
 let varTable: Map<string, { index: number; expr?: Expr }>
