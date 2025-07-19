@@ -240,7 +240,8 @@ function callExpression(module: binaryen.Module, expression: CallExpr): binaryen
         compileExpression(module, argExpr),
         printExpression(module, undefined, module.i32.const(strLen)),
       ])
-    } else if (argExpr.type == 'LiteralExpr' && typeof argExpr.value == 'number') {
+      // Either the print argument is a string - or it's an expression that needs to be evaluated and printed. for now -- add booleans - printing them should happen similar to integers. though true and false could be stored in data at fixed position and reused
+    } else {
       return printExpression(module, compileExpression(module, argExpr))
     }
   }
