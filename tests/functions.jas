@@ -1,22 +1,29 @@
 // 5
 // 0
 // alabhya
+// game time!!
+// 100
 
 fn add(a: int, b: int) -> int {
     return a + b;
 }
+println(add(2, 3));
 
 fn minus_dozen(a: int) -> int {
     return a - 12;
 }
-
-println(add(2, 3));
-
 let res: int = minus_dozen(add(6, 6));
 println(res);
 
 fn print_name() -> nil {
     println("alabhya");
 }
-
 print_name();
+
+fn verbose_mul(x: int, y: int) -> int {
+    println("game time!!");
+    return x * y;
+}
+
+let r: int = verbose_mul(10, 10);
+println(r);
