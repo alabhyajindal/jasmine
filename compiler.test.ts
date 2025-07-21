@@ -6,23 +6,40 @@ import compile from './src/compiler'
 import { $ } from 'bun'
 
 const testDir = './tests'
+const buildDir = './build'
 const fileNames = await readdir(testDir)
-fileNames.sort()
+
+let entireSource = ''
+let allExpected = []
 
 for (const fileName of fileNames) {
-  test(`${fileName}`, async () => {
-    let filePath = testDir + '/' + fileName
-    let sourceText = await Bun.file(filePath).text()
+  let filePath = testDir + '/' + fileName
+  let sourceText = await Bun.file(filePath).text()
+  entireSource += sourceText
+  entireSource += '\n\n\n'
 
-    let expected: string[] = getExpected(sourceText)
+  let fileExpected = getExpected(sourceText)
+  let expected = fileExpected.map((e) => ({ fileName, expected: e }))
+  allExpected.push(...expected)
+}
 
-    let tokens = scan(sourceText)
-    let statements = parse(tokens)
-    let wat = compile(statements)
+let sourcePath = buildDir + '/' + 'input.jas'
+let outPath = buildDir + '/' + 'main.wat'
 
-    let out: string[] = (await $`bun make ${filePath}`.text()).trim().split('\n')
+Bun.write(sourcePath, entireSource)
 
-    expect(out).toEqual(expected)
+let tokens = scan(entireSource)
+let statements = parse(tokens)
+let wat = compile(statements)
+Bun.write(outPath, wat)
+
+let out = (await $`bun make ${sourcePath}`.text()).trim().split('\n')
+
+for (let [i, ex] of allExpected.entries()) {
+  test(`${ex.fileName}`, () => {
+    let { expected } = ex
+    let output = out[i]
+    expect(output).toBe(expected)
   })
 }
 
