@@ -106,7 +106,7 @@ function compileStatement(module: binaryen.Module, stmt: Stmt): binaryen.Express
   }
 }
 
-function printExpression(
+function callWrite(
   module: binaryen.Module,
   expr?: binaryen.ExpressionRef,
   strLen?: binaryen.ExpressionRef
@@ -226,46 +226,48 @@ function unaryExpression(module: binaryen.Module, expression: UnaryExpr): binary
   }
 }
 
-function callExpression(module: binaryen.Module, expression: CallExpr): binaryen.ExpressionRef {
-  let fnName = expression.callee.name.lexeme
+function printFunction(module: binaryen.Module, expression: CallExpr): binaryen.ExpressionRef {
+  let argExpr = expression.args[0]!
 
-  if (fnName == 'println') {
-    let argExpr = expression.args[0]!
+  if (argExpr.type == 'VariableExpr') {
+    let identifier = argExpr.name.lexeme
+    let variableInfo = varTable.get(identifier)?.expr
+    // This handles literal expr that are numbers as well - but it's not an issue since they can be printed without evaluation
+    if (variableInfo?.type == 'LiteralExpr') {
+      variableInfo.value = variableInfo.value += '\n'
 
-    if (argExpr.type == 'VariableExpr') {
-      let identifier = argExpr.name.lexeme
-      let variableInfo = varTable.get(identifier)?.expr
-      if (variableInfo?.type == 'LiteralExpr') {
-        variableInfo.value = variableInfo.value += '\n'
-
-        let strLen = new TextEncoder().encode(variableInfo.value).length
-
-        return module.block(null, [
-          module.drop(stringExpression(module, variableInfo)),
-          printExpression(module, undefined, module.i32.const(strLen)),
-        ])
-      } else {
-        return printExpression(module, compileExpression(module, argExpr))
-      }
-    }
-
-    if (argExpr.type === 'LiteralExpr' && typeof argExpr.value === 'string') {
-      argExpr.value = argExpr.value + '\n'
-      let str = argExpr.value
-      let strLen = new TextEncoder().encode(str).length
+      let strLen = new TextEncoder().encode(variableInfo.value).length
 
       return module.block(null, [
-        // Module drop required here because stringExpression returns the start position of the string it compiled - we don't need that when we print it
-        module.drop(compileExpression(module, argExpr)),
-        printExpression(module, undefined, module.i32.const(strLen)),
+        module.drop(stringExpression(module, variableInfo)),
+        callWrite(module, undefined, module.i32.const(strLen)),
       ])
-      // Either the print argument is a string - or it's an expression that needs to be evaluated and printed. for now -- add booleans - printing them should happen similar to integers. though true and false could be stored in data at fixed position and reused
     } else {
-      return printExpression(module, compileExpression(module, argExpr))
+      // Handles non literals like 42 + 3
+      return callWrite(module, compileExpression(module, argExpr))
     }
   }
 
-  // User defined functions
+  if (argExpr.type === 'LiteralExpr' && typeof argExpr.value === 'string') {
+    argExpr.value = argExpr.value + '\n'
+    let str = argExpr.value
+    let strLen = new TextEncoder().encode(str).length
+
+    return module.block(null, [
+      module.drop(compileExpression(module, argExpr)),
+      callWrite(module, undefined, module.i32.const(strLen)),
+    ])
+  } else {
+    return callWrite(module, compileExpression(module, argExpr))
+  }
+}
+
+function callExpression(module: binaryen.Module, expression: CallExpr): binaryen.ExpressionRef {
+  let fnName = expression.callee.name.lexeme
+  if (fnName == 'println') {
+    return printFunction(module, expression)
+  }
+
   let args = expression.args.map((arg) => compileExpression(module, arg))
   return module.call(fnName, args, binaryen.i32)
 }
