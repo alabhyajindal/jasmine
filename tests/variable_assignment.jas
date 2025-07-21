@@ -1,6 +1,6 @@
 // 42
 // 3
-// 5
+// Alabhya Jindal
 
 let a: int = 42;
 println(a);
@@ -8,5 +8,5 @@ println(a);
 let b: int = 1 + 2;
 println(b);
 
-let c: int = (5);
-println(c);
+let name: str = "Alabhya Jindal";
+println(name);
