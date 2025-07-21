@@ -231,13 +231,32 @@ function callExpression(module: binaryen.Module, expression: CallExpr): binaryen
 
   if (fnName == 'println') {
     let argExpr = expression.args[0]!
+
+    if (argExpr.type == 'VariableExpr') {
+      let identifier = argExpr.name.lexeme
+      let variableInfo = varTable.get(identifier)?.expr
+      if (variableInfo?.type == 'LiteralExpr') {
+        variableInfo.value = variableInfo.value += '\n'
+
+        let strLen = new TextEncoder().encode(variableInfo.value).length
+
+        return module.block(null, [
+          module.drop(stringExpression(module, variableInfo)),
+          printExpression(module, undefined, module.i32.const(strLen)),
+        ])
+      } else {
+        return printExpression(module, compileExpression(module, argExpr))
+      }
+    }
+
     if (argExpr.type === 'LiteralExpr' && typeof argExpr.value === 'string') {
       argExpr.value = argExpr.value + '\n'
       let str = argExpr.value
       let strLen = new TextEncoder().encode(str).length
 
       return module.block(null, [
-        compileExpression(module, argExpr),
+        // Module drop required here because stringExpression returns the start position of the string it compiled - we don't need that when we print it
+        module.drop(compileExpression(module, argExpr)),
         printExpression(module, undefined, module.i32.const(strLen)),
       ])
       // Either the print argument is a string - or it's an expression that needs to be evaluated and printed. for now -- add booleans - printing them should happen similar to integers. though true and false could be stored in data at fixed position and reused
@@ -251,20 +270,22 @@ function callExpression(module: binaryen.Module, expression: CallExpr): binaryen
   return module.call(fnName, args, binaryen.i32)
 }
 
-let stringTable: Map<string, { start: number; end: number }> = new Map()
+let stringTable: Map<string, number> = new Map()
 
 function stringExpression(module: binaryen.Module, expr: LiteralExpr): binaryen.ExpressionRef {
-  let name = expr.value as string
+  let str = expr.value as string
+  let strArr = new TextEncoder().encode(str)
+  let startPos = 66
+
   let instrs = []
 
-  let str = name
-  let strArr = new TextEncoder().encode(str)
-
   for (let [i, charCode] of strArr.entries()) {
-    instrs.push(module.i32.store8(0, 1, module.i32.const(66 + i), module.i32.const(charCode)))
+    instrs.push(module.i32.store8(0, 1, module.i32.const(startPos + i), module.i32.const(charCode)))
   }
 
-  return module.block(null, instrs)
+  instrs.push(module.i32.const(startPos))
+
+  return module.block(null, instrs, binaryen.i32)
 }
 
 let varTable: Map<string, { index: number; expr?: Expr }>
