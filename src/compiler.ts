@@ -3,17 +3,22 @@ import type { BinaryExpr, CallExpr, Expr, LiteralExpr, UnaryExpr } from './Expr'
 import TokenType from './TokenType'
 import type { Stmt } from './Stmt'
 import { COMPILE_ERROR, reportError } from './error'
-import type Token from './Token'
 import type { ValueType } from './ValueType'
 
 type FunctionInfo = {
   returnType: ValueType
 }
 
+let varTable: Map<string, { index: number; expr?: Expr }>
+let stringTable: Map<string, number> = new Map()
 let functionTable: Map<string, FunctionInfo> = new Map()
-functionTable.set('println', { returnType: TokenType.TYPE_NIL })
 
 export default function compile(statements: Stmt[]) {
+  // Reset globals
+  varTable = new Map()
+  stringTable = new Map()
+  functionTable = new Map([['println', { returnType: TokenType.TYPE_NIL }]])
+
   const module = new binaryen.Module()
   module.setMemory(1, 2, 'memory')
 
@@ -299,8 +304,6 @@ function callExpression(module: binaryen.Module, expression: CallExpr): binaryen
   return module.call(fnName, args, tokenTypeToBinaryen.get(returnType))
 }
 
-let stringTable: Map<string, number> = new Map()
-
 function stringExpression(module: binaryen.Module, expr: LiteralExpr): binaryen.ExpressionRef {
   let str = expr.value as string
   let strArr = new TextEncoder().encode(str)
@@ -316,8 +319,6 @@ function stringExpression(module: binaryen.Module, expr: LiteralExpr): binaryen.
 
   return module.block(null, instrs, binaryen.i32)
 }
-
-let varTable: Map<string, { index: number; expr?: Expr }>
 
 function createVarTable(statements: Stmt[]) {
   let varCount = 0

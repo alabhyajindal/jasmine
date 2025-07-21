@@ -1,5 +1,6 @@
 // 5
 // 0
+// alabhya
 
 fn add(a: int, b: int) -> int {
     return a + b;
@@ -13,3 +14,9 @@ println(add(2, 3));
 
 let res: int = minus_dozen(add(6, 6));
 println(res);
+
+fn print_name() -> nil {
+    println("alabhya");
+}
+
+print_name();
