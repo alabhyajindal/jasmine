@@ -282,6 +282,11 @@ function printFunction(module: binaryen.Module, expression: CallExpr): binaryen.
   }
 }
 
+const tokenTypeToBinaryen: Map<ValueType, any> = new Map([
+  [TokenType.TYPE_NIL, binaryen.none],
+  [TokenType.TYPE_INT, binaryen.i32],
+])
+
 function callExpression(module: binaryen.Module, expression: CallExpr): binaryen.ExpressionRef {
   let fnName = expression.callee.name.lexeme
   if (fnName == 'println') {
@@ -289,7 +294,9 @@ function callExpression(module: binaryen.Module, expression: CallExpr): binaryen
   }
 
   let args = expression.args.map((arg) => compileExpression(module, arg))
-  return module.call(fnName, args, binaryen.i32)
+  let returnType: ValueType = functionTable.get(fnName)!.returnType
+
+  return module.call(fnName, args, tokenTypeToBinaryen.get(returnType))
 }
 
 let stringTable: Map<string, number> = new Map()
