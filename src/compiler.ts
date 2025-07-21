@@ -4,6 +4,14 @@ import TokenType from './TokenType'
 import type { Stmt } from './Stmt'
 import { COMPILE_ERROR, reportError } from './error'
 import type Token from './Token'
+import type { ValueType } from './ValueType'
+
+type FunctionInfo = {
+  returnType: ValueType
+}
+
+let functionTable: Map<string, FunctionInfo> = new Map()
+functionTable.set('println', { returnType: TokenType.TYPE_NIL })
 
 export default function compile(statements: Stmt[]) {
   const module = new binaryen.Module()
@@ -52,7 +60,16 @@ function program(module: binaryen.Module, statements: Stmt[]) {
 function compileStatement(module: binaryen.Module, stmt: Stmt): binaryen.ExpressionRef {
   switch (stmt.type) {
     case 'ExprStmt': {
-      return compileExpression(module, stmt.expression)
+      let expr = compileExpression(module, stmt.expression)
+
+      if (stmt.expression.type == 'CallExpr') {
+        let fnName = stmt.expression.callee.name.lexeme
+        if (functionTable.get(fnName)?.returnType == TokenType.TYPE_NIL) {
+          return expr
+        }
+      }
+
+      return module.drop(expr)
     }
     case 'VariableStmt': {
       let expr = compileExpression(module, stmt.initializer)
@@ -85,6 +102,9 @@ function compileStatement(module: binaryen.Module, stmt: Stmt): binaryen.Express
       if (stmt.returnType == TokenType.TYPE_INT) {
         returnType = binaryen.i32
       }
+
+      let valueReturnType = returnType == binaryen.i32 ? TokenType.TYPE_INT : TokenType.TYPE_NIL
+      functionTable.set(name, { returnType: valueReturnType })
 
       // Each function gets a blank state with nothing but the arguments passed in. That is, a function cannot access variables declared outside it's scope.
       let temp = varTable
