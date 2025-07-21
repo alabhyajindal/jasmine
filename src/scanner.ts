@@ -29,12 +29,7 @@ let tokens: Token[] = []
 let source = ''
 
 export default function scan(sourceText: string) {
-  // Reset globals
   source = sourceText
-  start = 0
-  current = 0
-  line = 1
-  tokens = []
 
   while (!isAtEnd()) {
     start = current

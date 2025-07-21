@@ -10,8 +10,6 @@ let current = 0
 let tokens: Token[]
 
 export default function parse(t: Token[]) {
-  // Reset globals
-  current = 0
   tokens = t
 
   let statements = []

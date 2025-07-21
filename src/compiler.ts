@@ -9,16 +9,13 @@ type FunctionInfo = {
   returnType: ValueType
 }
 
-let varTable: Map<string, { index: number; expr?: Expr }>
+let varTable: Map<string, { index: number; expr?: Expr }> = new Map()
 let stringTable: Map<string, number> = new Map()
-let functionTable: Map<string, FunctionInfo> = new Map()
+let functionTable: Map<string, FunctionInfo> = new Map([
+  ['println', { returnType: TokenType.TYPE_NIL }],
+])
 
 export default function compile(statements: Stmt[]) {
-  // Reset globals
-  varTable = new Map()
-  stringTable = new Map()
-  functionTable = new Map([['println', { returnType: TokenType.TYPE_NIL }]])
-
   const module = new binaryen.Module()
   module.setMemory(1, 2, 'memory')
 
