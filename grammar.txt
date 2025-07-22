@@ -1,21 +1,21 @@
-program     → statement* EOF ;
-statement   → varStmt | exprStmt | printStmt | funStmt | returnStmt ;
-varStmt     → "let" IDENTIFIER "=" expression "\n" ;
-exprStmt    → expression "\n" ;
-funStmt     → "fn" function ;
-returnStmt  → "return" expression? "\n" ;
-block       → "{" statement* "}" ;
+program     →  statement* EOF 
+statement   →  var_stmt | expr_stmt | fun_decl | return_stmt 
+var_stmt    →  "let" IDENTIFIER "=" expression ";" 
+expr_stmt   →  expression ";" 
+fun_decl    →  "fn" function 
+return_stmt →  "return" expression? ";" 
+block       →  "{" statement* "}" 
 
 
-expression  → equality ;
-equality    → comparison ( ( "!=" | "==" ) comparison )* ;
-comparison  → term ( ( ">" | ">=" | "<" | "<=" ) term )* ;
-term        → factor ( ( "+" | "-" ) factor )* ;
-factor      → unary ( ( "/" | "*" ) unary )* ;
-unary       → ( "!" | "-" ) unary | call ;
-call        → primary ( "(" argument? ")" )? ;
-primary     → NUMBER | IDENTIFIER | "(" expression ")" ;
+expression  →  equality 
+equality    →  comparison ( ( "!=" | "==" ) comparison )* 
+comparison  →  term ( ( ">" | ">=" | "<" | "<=" ) term )* 
+term        →  factor ( ( "+" | "-" ) factor )* 
+factor      →  unary ( ( "/" | "*" ) unary )* 
+unary       →  ( "!" | "-" ) unary | call 
+call        →  primary ( "(" argument? ")" )? 
+primary     →  NUMBER | IDENTIFIER | "(" expression ")" 
 
-function    → IDENTIFIER "(" parameters? ")" block ;
-parameters  → IDENTIFIER  ( "," IDENTIFIER )* ;
-arguments   → expression ( "," expression )* ;
+function    →  IDENTIFIER "(" parameters? ")" block 
+parameters  →  IDENTIFIER  ( "," IDENTIFIER )* 
+arguments   →  expression ( "," expression )* 
