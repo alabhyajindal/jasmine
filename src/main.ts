@@ -40,12 +40,12 @@ if (args.length == 2) {
 
 async function run(source: string) {
   const tokens = scan(source)
-  console.log(tokens)
-  return
+  // console.log(tokens)
+  // return
 
   const statements = parse(tokens)
-  // console.log(JSON.stringify(statements, null, 2))
-  // return
+  console.log(JSON.stringify(statements, null, 2))
+  return
 
   const wat = compile(statements)
 

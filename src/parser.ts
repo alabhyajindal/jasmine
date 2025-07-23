@@ -1,9 +1,20 @@
 import { PARSE_ERROR, reportError } from './error'
 import type { BinaryExpr, Expr, LiteralExpr, UnaryExpr, VariableExpr } from './Expr'
-import type { BlockStmt, ExprStmt, FunDecl, IfStmt, ReturnStmt, Stmt, VariableStmt } from './Stmt'
+import type {
+  BlockStmt,
+  ExprStmt,
+  ForStmt,
+  FunDecl,
+  IfStmt,
+  ReturnStmt,
+  Stmt,
+  VariableStmt,
+} from './Stmt'
 import type Token from './Token'
 import TokenType from './TokenType'
 import { ValueTypes, type ValueType } from './ValueType'
+
+// TODO: Clean up the parser - lots of unnecessary information. Is line number really required? Maybe for reporting errors but not for WebAssembly - could really benefit from a type checker - that ensures anything that makes it's way past it is a valid program. Need that anyways since we can't rely on Wasm for error reporting as we have another compiler backend coming up
 
 // Initializing variables
 let current = 0
@@ -35,6 +46,9 @@ function statement() {
   }
   if (match(TokenType.RETURN)) {
     return returnStatement()
+  }
+  if (match(TokenType.FOR)) {
+    return forStatement()
   }
 
   return expressionStatement()
@@ -105,6 +119,25 @@ function returnStatement(): ReturnStmt {
   consume(TokenType.SEMICOLON, 'Expect semicolon after expression.')
 
   return { value: value as Expr, type: 'ReturnStmt' }
+}
+
+function forStatement(): ForStmt {
+  let variable = consume(TokenType.IDENTIFER, 'Expect identifier after for keyword.').lexeme
+  consume(TokenType.IN, 'Expect in after for variable.')
+
+  let start = primary()
+  if (start.type != 'LiteralExpr' || typeof start.value != 'number') {
+    throw Error('Loop range must be a number.')
+  }
+
+  consume(TokenType.RANGE, 'Expect .. after loop starting value.')
+
+  let end = primary()
+  if (end.type != 'LiteralExpr' || typeof end.value != 'number') {
+    throw Error('Loop range must be a number.')
+  }
+
+  return { type: 'ForStmt', start: start.value, end: end.value, variable }
 }
 
 function expressionStatement(): ExprStmt {
