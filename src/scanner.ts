@@ -3,6 +3,8 @@ import TokenType from './TokenType'
 import type { ValueType } from './ValueType'
 import { reportError } from './error'
 
+// TODO: rename file to lexer
+
 const keywords: Record<string, TokenType> = {
   and: TokenType.AND,
   else: TokenType.ELSE,
@@ -14,6 +16,8 @@ const keywords: Record<string, TokenType> = {
   return: TokenType.RETURN,
   true: TokenType.TRUE,
   while: TokenType.WHILE,
+  for: TokenType.FOR,
+  in: TokenType.IN,
 }
 
 const types: Record<string, ValueType> = {
@@ -65,7 +69,7 @@ function scanToken() {
       addToken(TokenType.COMMA)
       break
     case '.':
-      addToken(TokenType.DOT)
+      match('.') ? addToken(TokenType.RANGE) : addToken(TokenType.DOT)
       break
     case '-':
       match('>') ? addToken(TokenType.ARROW) : addToken(TokenType.MINUS)
