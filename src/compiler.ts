@@ -143,7 +143,8 @@ function compileStatement(module: binaryen.Module, stmt: Stmt): binaryen.Express
       if (stmt.initializer.type == 'LiteralExpr') {
         if (typeof stmt.initializer.value == 'string') {
           varType = TokenType.TYPE_STR
-          strLen = new TextEncoder().encode(stmt.initializer.value).length
+          // Adding newline to the strLen
+          strLen = new TextEncoder().encode(stmt.initializer.value + '\n').length
         }
       }
 
@@ -170,36 +171,44 @@ function compileStatement(module: binaryen.Module, stmt: Stmt): binaryen.Express
 
       return module.if(condition, thenBranch)
     }
-    // case 'FunDecl': {
-    //   let name = stmt.name.lexeme
-    //   let paramTypes = binaryen.createType(Array(stmt.params.length).fill(binaryen.i32))
+    case 'FunDecl': {
+      let name = stmt.name.lexeme
+      let paramTypes = binaryen.createType(Array(stmt.params.length).fill(binaryen.i32))
 
-    //   let returnType = binaryen.none
-    //   if (stmt.returnType == TokenType.TYPE_INT) {
-    //     returnType = binaryen.i32
-    //   }
+      let returnType = binaryen.none
+      if (stmt.returnType == TokenType.TYPE_INT) {
+        returnType = binaryen.i32
+      }
 
-    //   let valueReturnType = returnType == binaryen.i32 ? TokenType.TYPE_INT : TokenType.TYPE_NIL
-    //   functionTable.set(name, { returnType: valueReturnType })
+      let valueReturnType = returnType == binaryen.i32 ? TokenType.TYPE_INT : TokenType.TYPE_NIL
+      functionTable.set(name, { returnType: valueReturnType })
 
-    //   // Each function gets a blank state with nothing but the arguments passed in. That is, a function cannot access variables declared outside it's scope.
-    //   let temp = varTable
-    //   varTable = getFunVarTable(stmt.params)
-    //   let body = compileStatement(module, stmt.body)
-    //   varTable = temp
+      // Each function gets a blank state with nothing but the arguments passed in. That is, a function cannot access variables declared outside it's scope.
 
-    //   module.addFunction(name, paramTypes, returnType, [], body)
-    //   return module.nop()
-    // }
+      // let temp = varTable
+      // varTable = getFunVarTable(stmt.params)
+
+      currentFunctionVarCount = 0
+      beginScope()
+      for (let p of stmt.params) {
+        defineVariable(p.name, p.type)
+      }
+      let body = compileStatement(module, stmt.body)
+      endScope()
+      // varTable = temp
+
+      module.addFunction(name, paramTypes, returnType, [], body)
+      return module.nop()
+    }
     case 'ReturnStmt': {
       let val = compileExpression(module, stmt.value)
       return module.return(val)
     }
-    case 'ForStmt': {
-      let body = compileStatement(module, stmt.body)
-      // the body only consists of printing - you need to manually construct the body so it contains a variable declaration then add the actual body of the loop, then after add a statement incrementing the variable. after that you need an if condition to jump to the labelled loop. for now using foo as the name is fine but you would want to generate something unique - uuid or can just have a number of loop count as the global variable that gets incremented when we process a new forstmt
-      return module.loop('foo', body)
-    }
+    // case 'ForStmt': {
+    //   let body = compileStatement(module, stmt.body)
+    //   // the body only consists of printing - you need to manually construct the body so it contains a variable declaration then add the actual body of the loop, then after add a statement incrementing the variable. after that you need an if condition to jump to the labelled loop. for now using foo as the name is fine but you would want to generate something unique - uuid or can just have a number of loop count as the global variable that gets incremented when we process a new forstmt
+    //   return module.loop('foo', body)
+    // }
     default: {
       console.error(stmt)
       throw Error('Unsupported statement.')
@@ -370,9 +379,21 @@ function printFunction(module: binaryen.Module, expression: CallExpr): binaryen.
   }
 
   if (argExpr.type === 'LiteralExpr' && typeof argExpr.value === 'string') {
-    argExpr.value = argExpr.value
+    argExpr.value = argExpr.value + '\n'
     let str = argExpr.value
     let strLen = new TextEncoder().encode(str).length
+
+    const TEMP_STR_LITERAL_POS = 2048
+
+    return module.block(null, [
+      module.drop(stringExpression(module, argExpr, TEMP_STR_LITERAL_POS)),
+      callWrite(
+        module,
+        undefined,
+        module.i32.const(strLen),
+        module.i32.const(TEMP_STR_LITERAL_POS)
+      ),
+    ])
 
     return module.block(null, [
       module.drop(compileExpression(module, argExpr)),
@@ -406,20 +427,28 @@ function assignExpression(module: binaryen.Module, expr: AssignExpr): binaryen.E
   }
 }
 
-function stringExpression(module: binaryen.Module, expr: LiteralExpr): binaryen.ExpressionRef {
-  let str = expr.value as string
+function stringExpression(
+  module: binaryen.Module,
+  expr: LiteralExpr,
+  storagePos: number = strLiteralMemoryPos
+): binaryen.ExpressionRef {
+  // Storing all strings with newline appended - since no operations exist on strings other than print - this is fine - if a new string operation is added like string concatenaion ++, then the newline char can be stored at a specific position in memory and printed everytime a string is printed
+  let str = expr.value + '\n'
   let strArr = new TextEncoder().encode(str)
 
   let instrs = []
 
   for (let [i, charCode] of strArr.entries()) {
     instrs.push(
-      module.i32.store8(0, 1, module.i32.const(strLiteralMemoryPos + i), module.i32.const(charCode))
+      module.i32.store8(0, 1, module.i32.const(storagePos + i), module.i32.const(charCode))
     )
   }
 
-  instrs.push(module.i32.const(strLiteralMemoryPos))
-  strLiteralMemoryPos += strArr.length
+  instrs.push(module.i32.const(storagePos))
+
+  if (arguments.length < 3) {
+    strLiteralMemoryPos += strArr.length
+  }
 
   return module.block(null, instrs, binaryen.i32)
 }
