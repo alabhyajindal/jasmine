@@ -150,7 +150,24 @@ function expressionStatement(): ExprStmt {
 }
 
 function expression(): Expr {
-  return equality()
+  return assignment()
+}
+
+function assignment(): Expr {
+  let expr = equality()
+
+  if (match(TokenType.EQUAL)) {
+    let equals = previous()
+    let value = assignment()
+
+    if (expr.type == 'VariableExpr') {
+      let name = expr.name
+      return { name, value, type: 'AssignExpr' }
+    }
+    reportError(equals, 'Invalid variable assignment.', PARSE_ERROR)
+  }
+
+  return expr
 }
 
 function equality(): Expr {

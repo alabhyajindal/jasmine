@@ -44,8 +44,8 @@ async function run(source: string) {
   // return
 
   const statements = parse(tokens)
-  console.log(JSON.stringify(statements, null, 2))
-  return
+  // console.log(JSON.stringify(statements, null, 2))
+  // return
 
   const wat = compile(statements)
 

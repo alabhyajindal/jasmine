@@ -1,6 +1,19 @@
 import type Token from './Token'
 
-export type Expr = LiteralExpr | BinaryExpr | UnaryExpr | VariableExpr | GroupingExpr | CallExpr
+export type Expr =
+  | LiteralExpr
+  | BinaryExpr
+  | UnaryExpr
+  | VariableExpr
+  | GroupingExpr
+  | CallExpr
+  | AssignExpr
+
+export interface AssignExpr {
+  type: 'AssignExpr'
+  name: Token
+  value: Expr
+}
 
 export interface BinaryExpr {
   type: 'BinaryExpr'

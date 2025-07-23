@@ -5,6 +5,8 @@ import type { Stmt } from './Stmt'
 import { COMPILE_ERROR, reportError } from './error'
 import type { ValueType } from './ValueType'
 
+// TODO: Make module a global variable so it doesn't have to be passed to each function. The source file will always be compiled to a single module - importing helper functions from other modules
+
 type FunctionInfo = {
   returnType: ValueType
 }
@@ -120,6 +122,11 @@ function compileStatement(module: binaryen.Module, stmt: Stmt): binaryen.Express
     case 'ReturnStmt': {
       let val = compileExpression(module, stmt.value)
       return module.return(val)
+    }
+    case 'ForStmt': {
+      let body = compileStatement(module, stmt.body)
+      // the body only consists of printing - you need to manually construct the body so it contains a variable declaration then add the actual body of the loop, then after add a statement incrementing the variable. after that you need an if condition to jump to the labelled loop. for now using foo as the name is fine but you would want to generate something unique - uuid or can just have a number of loop count as the global variable that gets incremented when we process a new forstmt
+      return module.loop('foo', body)
     }
     default: {
       console.error(stmt)
