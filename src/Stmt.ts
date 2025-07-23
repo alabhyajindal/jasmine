@@ -20,6 +20,7 @@ export interface ForStmt {
   start: number
   end: number
   variable: string
+  body: BlockStmt
 }
 
 export interface FunDecl {

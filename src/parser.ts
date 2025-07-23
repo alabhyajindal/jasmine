@@ -71,7 +71,6 @@ function blockStatement(): BlockStmt {
   while (!check(TokenType.RIGHT_BRACE)) {
     statements.push(statement())
   }
-
   consume(TokenType.RIGHT_BRACE, "Expect '}' after block.")
   return { type: 'BlockStmt', statements }
 }
@@ -137,7 +136,11 @@ function forStatement(): ForStmt {
     throw Error('Loop range must be a number.')
   }
 
-  return { type: 'ForStmt', start: start.value, end: end.value, variable }
+  // NOTE: feels weird that we have to consume the opening brace when we expect a block statement - can this be moved there?
+  consume(TokenType.LEFT_BRACE, "Expect '{' before for loop body.")
+  let body = blockStatement()
+
+  return { type: 'ForStmt', start: start.value, end: end.value, variable, body }
 }
 
 function expressionStatement(): ExprStmt {
