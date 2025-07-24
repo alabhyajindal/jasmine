@@ -1,13 +1,14 @@
 import binaryen from 'binaryen'
 import type { AssignExpr, BinaryExpr, CallExpr, Expr, LiteralExpr, UnaryExpr } from './Expr'
 import TokenType from './TokenType'
-import type { Stmt } from './Stmt'
+import type { ForStmt, Stmt } from './Stmt'
 import { COMPILE_ERROR, reportError } from './error'
 import type { ValueType } from './ValueType'
 
 // TODO: Make module a global variable so it doesn't have to be passed to each function. The source file will always be compiled to a single module - importing helper functions from other modules
 
 let strLiteralMemoryPos = 1024
+let loopCounter = 0
 
 const tokenTypeToBinaryen: Map<ValueType, any> = new Map([
   [TokenType.TYPE_NIL, binaryen.none],
@@ -186,7 +187,6 @@ function compileStatement(module: binaryen.Module, stmt: Stmt): binaryen.Express
       }
       let body = compileStatement(module, stmt.body)
       endScope()
-      // varTable = temp
 
       module.addFunction(name, paramTypes, returnType, [], body)
       return module.nop()
@@ -195,16 +195,50 @@ function compileStatement(module: binaryen.Module, stmt: Stmt): binaryen.Express
       let val = compileExpression(module, stmt.value)
       return module.return(val)
     }
-    // case 'ForStmt': {
-    //   let body = compileStatement(module, stmt.body)
-    //   // the body only consists of printing - you need to manually construct the body so it contains a variable declaration then add the actual body of the loop, then after add a statement incrementing the variable. after that you need an if condition to jump to the labelled loop. for now using foo as the name is fine but you would want to generate something unique - uuid or can just have a number of loop count as the global variable that gets incremented when we process a new forstmt
-    //   return module.loop('foo', body)
-    // }
+    case 'ForStmt':
+      return forStatement(module, stmt)
     default: {
       console.error(stmt)
       throw Error('Unsupported statement.')
     }
   }
+}
+
+function forStatement(module: binaryen.Module, forStmt: ForStmt): binaryen.ExpressionRef {
+  let loopId = loopCounter++
+  let loopLabel = `loop_${loopId}`
+  let blockLabel = `block_${loopId}`
+
+  beginScope()
+  let loopVarInfo = defineVariable(forStmt.variable, TokenType.TYPE_INT)
+  let initializer = module.local.set(loopVarInfo.index, module.i32.const(forStmt.start))
+  let body = compileStatement(module, forStmt.body)
+  endScope()
+
+  let increment = module.local.set(
+    loopVarInfo.index,
+    module.i32.add(module.local.get(loopVarInfo.index, binaryen.i32), module.i32.const(1))
+  )
+
+  let condition = module.i32.ge_s(
+    module.local.get(loopVarInfo.index, binaryen.i32),
+    module.i32.const(forStmt.end)
+  )
+
+  return module.block(null, [
+    initializer,
+    module.block(blockLabel, [
+      module.loop(
+        loopLabel,
+        module.block(null, [
+          module.br_if(blockLabel, condition),
+          body,
+          increment,
+          module.br(loopLabel),
+        ])
+      ),
+    ]),
+  ])
 }
 
 function callWrite(
