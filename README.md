@@ -8,6 +8,8 @@ Here's what it looks like!
 fn add(a: int, b: int) -> int {
     return a + b;
 }
+
+println(add(2, 1));
 ```
 
 ## Goals
