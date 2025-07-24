@@ -22,6 +22,7 @@ enum TokenType {
   LESS = 'LESS',
   LESS_EQUAL = 'LESS_EQUAL',
   ARROW = 'ARROW',
+  RANGE = 'RANGE',
 
   // Keywords
   AND = 'AND',
@@ -34,6 +35,8 @@ enum TokenType {
   RETURN = 'RETURN',
   TRUE = 'TRUE',
   WHILE = 'WHILE',
+  FOR = 'FOR',
+  IN = 'IN',
 
   // Types
   TYPE_INT = 'TYPE_INT',

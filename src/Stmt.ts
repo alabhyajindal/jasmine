@@ -2,7 +2,7 @@ import type { Expr } from './Expr'
 import type Token from './Token'
 import type { ValueType } from './ValueType'
 
-export type Stmt = BlockStmt | ExprStmt | VariableStmt | IfStmt | FunDecl | ReturnStmt
+export type Stmt = BlockStmt | ExprStmt | VariableStmt | IfStmt | FunDecl | ReturnStmt | ForStmt
 
 export interface BlockStmt {
   type: 'BlockStmt'
@@ -12,6 +12,15 @@ export interface BlockStmt {
 export interface ExprStmt {
   type: 'ExprStmt'
   expression: Expr
+}
+
+// this depends on what information is needed by wasm
+export interface ForStmt {
+  type: 'ForStmt'
+  start: number
+  end: number
+  variable: string
+  body: BlockStmt
 }
 
 export interface FunDecl {
