@@ -1,0 +1,12 @@
+// 42
+// 3
+// Alabhya Jindal
+
+let a: int = 42;
+println(a);
+
+let b: int = 1 + 2;
+println(b);
+
+let name: str = "Alabhya Jindal";
+println(name);

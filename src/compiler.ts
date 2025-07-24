@@ -388,12 +388,21 @@ function callExpression(module: binaryen.Module, expression: CallExpr): binaryen
 function assignExpression(module: binaryen.Module, expr: AssignExpr): binaryen.ExpressionRef {
   let varName = expr.name.lexeme
   let varInfo = findVariable(varName)
-  if (varInfo) {
-    let value = compileExpression(module, expr.value)
-    return module.local.set(varInfo.index, value)
-  } else {
-    throw Error('yoo bruhhh?')
+  if (!varInfo) {
+    throw Error('Cannot assign to undeclared variable.')
   }
+
+  if (varInfo.type == TokenType.TYPE_STR) {
+    if (expr.value.type == 'LiteralExpr' && typeof expr.value.value == 'string') {
+      let newStrLen = new TextEncoder().encode(expr.value.value + '\n').length
+      varInfo.strLen = newStrLen
+    } else {
+      throw Error('String variables can only be reassigned to literals.')
+    }
+  }
+
+  let value = compileExpression(module, expr.value)
+  return module.local.set(varInfo.index, value)
 }
 
 function stringExpression(

@@ -1,12 +1,14 @@
-// 42
-// 3
-// Alabhya Jindal
+// 1
+// 400
+// Rio de Janeiro 
+// Cape Town
 
-let a: int = 42;
-println(a);
+let x: int = 1;
+println(x);
+x = 400;
+println(x);
 
-let b: int = 1 + 2;
-println(b);
-
-let name: str = "Alabhya Jindal";
-println(name);
+let city: str = "Rio de Janeiro";
+println(city);
+city = "Cape Town";
+println(city);
