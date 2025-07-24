@@ -258,41 +258,40 @@ function binaryExpression(expression: BinaryExpr): binaryen.ExpressionRef {
   }
 }
 
-function literalExpression(expression: LiteralExpr): binaryen.ExpressionRef {
+/**
+ * Process a literal value.
+ * i32 are returned for numbers and booleans.
+ * Strings are stored in memory as a side effect and their starting position are returned.
+ */
+function literalExpression(
+  expression: LiteralExpr,
+  storagePos: number = strLiteralMemoryPos
+): binaryen.ExpressionRef {
   switch (typeof expression.value) {
     case 'number':
       return mod.i32.const(expression.value)
     case 'boolean':
       return mod.i32.const(expression.value ? 1 : 0)
-    case 'string':
-      return stringExpression(expression)
+    case 'string': {
+      // Storing all strings with newline appended - since no operations exist on strings other than print - this is fine - if a new string operation is added like string concatenaion ++, then the newline char can be stored at a specific position in memory and printed everytime a string is printed
+      let str = expression.value + '\n'
+      let strArr = new TextEncoder().encode(str)
+
+      let instrs = []
+      for (let [i, charCode] of strArr.entries()) {
+        instrs.push(mod.i32.store8(0, 1, mod.i32.const(storagePos + i), mod.i32.const(charCode)))
+      }
+      instrs.push(mod.i32.const(storagePos))
+
+      if (arguments.length < 3) {
+        strLiteralMemoryPos += strArr.length
+      }
+      return mod.block(null, instrs, binaryen.i32)
+    }
     default:
       console.error(expression)
       throw Error('Unsupported literal expression.')
   }
-}
-
-function stringExpression(
-  expr: LiteralExpr,
-  storagePos: number = strLiteralMemoryPos
-): binaryen.ExpressionRef {
-  // Storing all strings with newline appended - since no operations exist on strings other than print - this is fine - if a new string operation is added like string concatenaion ++, then the newline char can be stored at a specific position in memory and printed everytime a string is printed
-  let str = expr.value + '\n'
-  let strArr = new TextEncoder().encode(str)
-
-  let instrs = []
-
-  for (let [i, charCode] of strArr.entries()) {
-    instrs.push(mod.i32.store8(0, 1, mod.i32.const(storagePos + i), mod.i32.const(charCode)))
-  }
-
-  instrs.push(mod.i32.const(storagePos))
-
-  if (arguments.length < 3) {
-    strLiteralMemoryPos += strArr.length
-  }
-
-  return mod.block(null, instrs, binaryen.i32)
 }
 
 function unaryExpression(expression: UnaryExpr): binaryen.ExpressionRef {
@@ -339,6 +338,7 @@ function assignExpression(expr: AssignExpr): binaryen.ExpressionRef {
   return mod.local.set(varInfo.index, value)
 }
 
+/** Compiles a `println` function call */
 function printFunction(expression: CallExpr): binaryen.ExpressionRef {
   let argExpr = expression.args[0]!
 
@@ -369,7 +369,7 @@ function printFunction(expression: CallExpr): binaryen.ExpressionRef {
     const TEMP_STR_LITERAL_POS = 2048
 
     return mod.block(null, [
-      mod.drop(stringExpression(argExpr, TEMP_STR_LITERAL_POS)),
+      mod.drop(literalExpression(argExpr, TEMP_STR_LITERAL_POS)),
       callWrite(undefined, mod.i32.const(strLen), mod.i32.const(TEMP_STR_LITERAL_POS)),
     ])
   } else {
@@ -377,6 +377,7 @@ function printFunction(expression: CallExpr): binaryen.ExpressionRef {
   }
 }
 
+/** Calls the write function provided by WASI */
 function callWrite(
   expr?: binaryen.ExpressionRef,
   strLen?: binaryen.ExpressionRef,
@@ -431,6 +432,7 @@ function defineVariable(name: string, type: ValueType, strLen?: number): Variabl
   return info
 }
 
+/** Looks for a variable in the current scope, moving up in scope to parent if not found */
 function findVariable(name: string) {
   for (let i = scopes.length - 1; i >= 0; i--) {
     let scope = scopes[i]

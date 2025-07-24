@@ -14,7 +14,6 @@ export interface ExprStmt {
   expression: Expr
 }
 
-// this depends on what information is needed by wasm
 export interface ForStmt {
   type: 'ForStmt'
   start: number

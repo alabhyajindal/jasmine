@@ -1,5 +1,5 @@
 import { PARSE_ERROR, reportError } from './error'
-import type { BinaryExpr, Expr, LiteralExpr, UnaryExpr, VariableExpr } from './Expr'
+import type { Expr, VariableExpr } from './Expr'
 import type {
   BlockStmt,
   ExprStmt,
@@ -7,7 +7,6 @@ import type {
   FunDecl,
   IfStmt,
   ReturnStmt,
-  Stmt,
   VariableStmt,
 } from './Stmt'
 import type Token from './Token'
