@@ -16,8 +16,8 @@ export interface ExprStmt {
 
 export interface ForStmt {
   type: 'ForStmt'
-  start: number
-  end: number
+  start: Expr
+  end: Expr
   variable: string
   body: BlockStmt
 }

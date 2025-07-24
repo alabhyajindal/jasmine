@@ -178,7 +178,7 @@ function forStatement(forStmt: ForStmt): binaryen.ExpressionRef {
 
   beginScope()
   let loopVarInfo = defineVariable(forStmt.variable, TokenType.TYPE_INT)
-  let initializer = mod.local.set(loopVarInfo.index, mod.i32.const(forStmt.start))
+  let initializer = mod.local.set(loopVarInfo.index, compileExpression(forStmt.start))
   let body = compileStatement(forStmt.body)
   endScope()
 
@@ -189,7 +189,7 @@ function forStatement(forStmt: ForStmt): binaryen.ExpressionRef {
 
   let condition = mod.i32.ge_s(
     mod.local.get(loopVarInfo.index, binaryen.i32),
-    mod.i32.const(forStmt.end)
+    compileExpression(forStmt.end)
   )
 
   return mod.block(null, [

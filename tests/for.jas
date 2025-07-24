@@ -18,3 +18,13 @@ for i in 5..8 {
 for i in 100..100 {
     println(i);
 }
+
+// 95
+// 96
+
+let start: int = 95;
+let end: int = 97;
+
+for i in start..end {
+    println(i);
+}
