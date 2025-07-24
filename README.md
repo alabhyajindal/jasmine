@@ -5,8 +5,8 @@ Jasmine is a statically-typed programming language that compiles to WebAssembly.
 Here's what it looks like!
 
 ```
-fn add(a: int, b: int): int {
-    return a + b
+fn add(a: int, b: int) -> int {
+    return a + b;
 }
 ```
 
@@ -23,7 +23,3 @@ git clone git@github.com:alabhyajindal/jasmine.git
 cd jasmine
 bun src/main.ts
 ```
-
-## Status
-
-Jasmine is under active development and is not a working compiler yet.
