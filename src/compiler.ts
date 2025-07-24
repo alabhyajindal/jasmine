@@ -29,8 +29,6 @@ let scopes: Map<string, VariableInfo>[] = []
 let currentFunctionVars: binaryen.Type[] = []
 let currentFunctionVarCount = 0
 
-// let varTable: Map<string, { index: number; expr?: Expr }> = new Map()
-let stringTable: Map<string, number> = new Map()
 let functionTable: Map<string, FunctionInfo> = new Map([
   ['println', { returnType: TokenType.TYPE_NIL }],
 ])
@@ -92,9 +90,6 @@ export default function compile(statements: Stmt[]) {
     binaryen.i32
   )
 
-  // createVarTable(statements)
-  // let varTypes = Array(varTable.size).fill(binaryen.i32)
-
   currentFunctionVars = []
   currentFunctionVarCount = 0
 
@@ -152,7 +147,6 @@ function compileStatement(module: binaryen.Module, stmt: Stmt): binaryen.Express
 
       let varName = stmt.name.lexeme
       let varInfo = defineVariable(varName, varType, strLen)
-      // console.log(varInfo)
       return module.local.set(varInfo.index, expr)
     }
     case 'BlockStmt': {
@@ -184,9 +178,6 @@ function compileStatement(module: binaryen.Module, stmt: Stmt): binaryen.Express
       functionTable.set(name, { returnType: valueReturnType })
 
       // Each function gets a blank state with nothing but the arguments passed in. That is, a function cannot access variables declared outside it's scope.
-
-      // let temp = varTable
-      // varTable = getFunVarTable(stmt.params)
 
       currentFunctionVarCount = 0
       beginScope()
@@ -354,25 +345,8 @@ function printFunction(module: binaryen.Module, expression: CallExpr): binaryen.
       if (!varInfo.strLen) {
         throw Error('Unable to compute string length at compile time')
       }
-      // return module.block(null, [
-      //   module.drop(strAddress),
-      //   callWrite(module, undefined, module.i32.const(varInfo.strLen)),
-      // ])
       return callWrite(module, undefined, module.i32.const(varInfo.strLen), strAddress)
-    }
-
-    // // This handles literal expr that are numbers as well - but it's not an issue since they can be printed without evaluation
-    // if (variableInfo?.type == TokenType.TYPE_STR) {
-    //   variableInfo. = variableInfo.value += '\n'
-
-    //   let strLen = new TextEncoder().encode(variableInfo.value).length
-
-    //   return module.block(null, [
-    //     // module.drop(stringExpression(module, variableInfo)),
-    //     callWrite(module, undefined, module.i32.const(strLen)),
-    //   ])
-    // }
-    else {
+    } else {
       // Handles non literals like 42 + 3
       return callWrite(module, compileExpression(module, argExpr))
     }
@@ -393,11 +367,6 @@ function printFunction(module: binaryen.Module, expression: CallExpr): binaryen.
         module.i32.const(strLen),
         module.i32.const(TEMP_STR_LITERAL_POS)
       ),
-    ])
-
-    return module.block(null, [
-      module.drop(compileExpression(module, argExpr)),
-      callWrite(module, undefined, module.i32.const(strLen)),
     ])
   } else {
     return callWrite(module, compileExpression(module, argExpr))
@@ -451,16 +420,4 @@ function stringExpression(
   }
 
   return module.block(null, instrs, binaryen.i32)
-}
-
-function getFunVarTable(params: { name: string; type: TokenType }[]) {
-  let varCount = 0
-  let varMap = new Map()
-
-  for (let param of params) {
-    let varName = param.name
-    varMap.set(varName, { index: varCount++ })
-  }
-
-  return varMap
 }
