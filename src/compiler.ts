@@ -5,15 +5,6 @@ import type { ForStmt, Stmt } from './Stmt'
 import { COMPILE_ERROR, reportError } from './error'
 import type { ValueType } from './ValueType'
 
-let strLiteralMemoryPos = 1024
-let loopCounter = 0
-
-const tokenTypeToBinaryen: Map<ValueType, any> = new Map([
-  [TokenType.TYPE_NIL, binaryen.none],
-  [TokenType.TYPE_INT, binaryen.i32],
-  [TokenType.TYPE_STR, binaryen.i32],
-])
-
 type FunctionInfo = {
   returnType: ValueType
 }
@@ -24,52 +15,23 @@ interface VariableInfo {
   strLen?: number
 }
 
+let mod: binaryen.Module
 let scopes: Map<string, VariableInfo>[] = []
 let currentFunctionVars: binaryen.Type[] = []
 let currentFunctionVarCount = 0
+let strLiteralMemoryPos = 1024
+let loopCounter = 0
+
+const tokenTypeToBinaryen: Map<ValueType, any> = new Map([
+  [TokenType.TYPE_NIL, binaryen.none],
+  [TokenType.TYPE_INT, binaryen.i32],
+  [TokenType.TYPE_STR, binaryen.i32],
+])
 
 let functionTable: Map<string, FunctionInfo> = new Map([
   ['println', { returnType: TokenType.TYPE_NIL }],
 ])
 
-function defineVariable(name: string, type: ValueType, strLen?: number): VariableInfo {
-  let currentScope = scopes[scopes.length - 1]
-  if (currentScope?.has(name)) {
-    throw Error('the variable already exists in the current scope.')
-  }
-
-  const info: VariableInfo = {
-    index: currentFunctionVarCount++,
-    type,
-    strLen,
-  }
-
-  currentScope?.set(name, info)
-  currentFunctionVars.push(tokenTypeToBinaryen.get(type))
-
-  return info
-}
-
-function findVariable(name: string) {
-  for (let i = scopes.length - 1; i >= 0; i--) {
-    let scope = scopes[i]
-    if (scope?.has(name)) {
-      return scope.get(name)
-    }
-  }
-
-  return undefined
-}
-
-function beginScope() {
-  scopes.push(new Map())
-}
-
-function endScope() {
-  scopes.pop()
-}
-
-let mod: binaryen.Module
 export default function compile(statements: Stmt[]) {
   mod = new binaryen.Module()
   mod.setMemory(1, 2, 'memory')
@@ -115,6 +77,7 @@ function program(statements: Stmt[]) {
   return mod.block(null, res, binaryen.none)
 }
 
+/** Statement dispatcher */
 function compileStatement(stmt: Stmt): binaryen.ExpressionRef {
   switch (stmt.type) {
     case 'ExprStmt': {
@@ -235,40 +198,7 @@ function forStatement(forStmt: ForStmt): binaryen.ExpressionRef {
   ])
 }
 
-function callWrite(
-  expr?: binaryen.ExpressionRef,
-  strLen?: binaryen.ExpressionRef,
-  bufferPtr: number = mod.i32.const(66)
-) {
-  if (expr && !strLen) {
-    strLen = mod.call('itoa', [expr, bufferPtr], binaryen.i32)
-  }
-
-  // ewww - when we print an int we pass expr, when we print a string we pass strlen - both are never passed - modify the function so we don't need this check below
-  if (!strLen) {
-    throw Error('Failed to compute strLen')
-  }
-
-  return mod.block(null, [
-    // iovec structure
-    mod.i32.store(0, 4, mod.i32.const(0), bufferPtr),
-    mod.i32.store(0, 4, mod.i32.const(4), strLen),
-
-    mod.drop(
-      mod.call(
-        'write',
-        [
-          mod.i32.const(1), // stdout
-          mod.i32.const(0), // iovec start address
-          mod.i32.const(1), // read this many iovecs
-          mod.i32.const(92), // nwritten
-        ],
-        binaryen.i32
-      )
-    ),
-  ])
-}
-
+/** Expression dispatcher */
 function compileExpression(expression: Expr): binaryen.ExpressionRef {
   switch (expression.type) {
     case 'BinaryExpr':
@@ -342,6 +272,29 @@ function literalExpression(expression: LiteralExpr): binaryen.ExpressionRef {
   }
 }
 
+function stringExpression(
+  expr: LiteralExpr,
+  storagePos: number = strLiteralMemoryPos
+): binaryen.ExpressionRef {
+  // Storing all strings with newline appended - since no operations exist on strings other than print - this is fine - if a new string operation is added like string concatenaion ++, then the newline char can be stored at a specific position in memory and printed everytime a string is printed
+  let str = expr.value + '\n'
+  let strArr = new TextEncoder().encode(str)
+
+  let instrs = []
+
+  for (let [i, charCode] of strArr.entries()) {
+    instrs.push(mod.i32.store8(0, 1, mod.i32.const(storagePos + i), mod.i32.const(charCode)))
+  }
+
+  instrs.push(mod.i32.const(storagePos))
+
+  if (arguments.length < 3) {
+    strLiteralMemoryPos += strArr.length
+  }
+
+  return mod.block(null, instrs, binaryen.i32)
+}
+
 function unaryExpression(expression: UnaryExpr): binaryen.ExpressionRef {
   switch (expression.operator.type) {
     case TokenType.MINUS: {
@@ -352,6 +305,38 @@ function unaryExpression(expression: UnaryExpr): binaryen.ExpressionRef {
       console.error(expression.operator)
       throw Error(`Unsupported binary operator.`)
   }
+}
+
+function callExpression(expression: CallExpr): binaryen.ExpressionRef {
+  let fnName = expression.callee.name.lexeme
+  if (fnName == 'println') {
+    return printFunction(expression)
+  }
+
+  let args = expression.args.map((arg) => compileExpression(arg))
+  let returnType: ValueType = functionTable.get(fnName)!.returnType
+
+  return mod.call(fnName, args, tokenTypeToBinaryen.get(returnType))
+}
+
+function assignExpression(expr: AssignExpr): binaryen.ExpressionRef {
+  let varName = expr.name.lexeme
+  let varInfo = findVariable(varName)
+  if (!varInfo) {
+    throw Error('Cannot assign to undeclared variable.')
+  }
+
+  if (varInfo.type == TokenType.TYPE_STR) {
+    if (expr.value.type == 'LiteralExpr' && typeof expr.value.value == 'string') {
+      let newStrLen = new TextEncoder().encode(expr.value.value + '\n').length
+      varInfo.strLen = newStrLen
+    } else {
+      throw Error('String variables can only be reassigned to literals.')
+    }
+  }
+
+  let value = compileExpression(expr.value)
+  return mod.local.set(varInfo.index, value)
 }
 
 function printFunction(expression: CallExpr): binaryen.ExpressionRef {
@@ -392,57 +377,75 @@ function printFunction(expression: CallExpr): binaryen.ExpressionRef {
   }
 }
 
-function callExpression(expression: CallExpr): binaryen.ExpressionRef {
-  let fnName = expression.callee.name.lexeme
-  if (fnName == 'println') {
-    return printFunction(expression)
+function callWrite(
+  expr?: binaryen.ExpressionRef,
+  strLen?: binaryen.ExpressionRef,
+  bufferPtr: number = mod.i32.const(66)
+) {
+  if (expr && !strLen) {
+    strLen = mod.call('itoa', [expr, bufferPtr], binaryen.i32)
   }
 
-  let args = expression.args.map((arg) => compileExpression(arg))
-  let returnType: ValueType = functionTable.get(fnName)!.returnType
+  // ewww - when we print an int we pass expr, when we print a string we pass strlen - both are never passed - modify the function so we don't need this check below
+  if (!strLen) {
+    throw Error('Failed to compute strLen')
+  }
 
-  return mod.call(fnName, args, tokenTypeToBinaryen.get(returnType))
+  return mod.block(null, [
+    // iovec structure
+    mod.i32.store(0, 4, mod.i32.const(0), bufferPtr),
+    mod.i32.store(0, 4, mod.i32.const(4), strLen),
+
+    mod.drop(
+      mod.call(
+        'write',
+        [
+          mod.i32.const(1), // stdout
+          mod.i32.const(0), // iovec start address
+          mod.i32.const(1), // read this many iovecs
+          mod.i32.const(92), // nwritten
+        ],
+        binaryen.i32
+      )
+    ),
+  ])
 }
 
-function assignExpression(expr: AssignExpr): binaryen.ExpressionRef {
-  let varName = expr.name.lexeme
-  let varInfo = findVariable(varName)
-  if (!varInfo) {
-    throw Error('Cannot assign to undeclared variable.')
+// Utils
+
+/** Defines a variable in the current scope */
+function defineVariable(name: string, type: ValueType, strLen?: number): VariableInfo {
+  let currentScope = scopes[scopes.length - 1]
+  if (currentScope?.has(name)) {
+    throw Error('the variable already exists in the current scope.')
   }
 
-  if (varInfo.type == TokenType.TYPE_STR) {
-    if (expr.value.type == 'LiteralExpr' && typeof expr.value.value == 'string') {
-      let newStrLen = new TextEncoder().encode(expr.value.value + '\n').length
-      varInfo.strLen = newStrLen
-    } else {
-      throw Error('String variables can only be reassigned to literals.')
+  const info: VariableInfo = {
+    index: currentFunctionVarCount++,
+    type,
+    strLen,
+  }
+
+  currentScope?.set(name, info)
+  currentFunctionVars.push(tokenTypeToBinaryen.get(type))
+  return info
+}
+
+function findVariable(name: string) {
+  for (let i = scopes.length - 1; i >= 0; i--) {
+    let scope = scopes[i]
+    if (scope?.has(name)) {
+      return scope.get(name)
     }
   }
 
-  let value = compileExpression(expr.value)
-  return mod.local.set(varInfo.index, value)
+  return undefined
 }
 
-function stringExpression(
-  expr: LiteralExpr,
-  storagePos: number = strLiteralMemoryPos
-): binaryen.ExpressionRef {
-  // Storing all strings with newline appended - since no operations exist on strings other than print - this is fine - if a new string operation is added like string concatenaion ++, then the newline char can be stored at a specific position in memory and printed everytime a string is printed
-  let str = expr.value + '\n'
-  let strArr = new TextEncoder().encode(str)
+function beginScope() {
+  scopes.push(new Map())
+}
 
-  let instrs = []
-
-  for (let [i, charCode] of strArr.entries()) {
-    instrs.push(mod.i32.store8(0, 1, mod.i32.const(storagePos + i), mod.i32.const(charCode)))
-  }
-
-  instrs.push(mod.i32.const(storagePos))
-
-  if (arguments.length < 3) {
-    strLiteralMemoryPos += strArr.length
-  }
-
-  return mod.block(null, instrs, binaryen.i32)
+function endScope() {
+  scopes.pop()
 }
