@@ -1,7 +1,7 @@
 import binaryen from 'binaryen'
 import type { AssignExpr, BinaryExpr, CallExpr, Expr, LiteralExpr, UnaryExpr } from './Expr'
 import TokenType from './TokenType'
-import type { ForStmt, Stmt } from './Stmt'
+import type { ForStmt, FunDecl, Stmt } from './Stmt'
 import { COMPILE_ERROR, reportError } from './error'
 import type { ValueType } from './ValueType'
 
@@ -17,7 +17,7 @@ interface VariableInfo {
 
 let mod: binaryen.Module
 let scopes: Map<string, VariableInfo>[] = []
-let currentFunctionVars: binaryen.Type[] = []
+let functionVars: binaryen.Type[] = []
 let strLiteralMemoryPos = 1024
 let loopCounter = 0
 
@@ -55,7 +55,7 @@ export default function compile(stmt: Stmt[]) {
   const body = compileStatements(stmt)
   endScope()
 
-  mod.addFunction('main', binaryen.createType([]), binaryen.none, currentFunctionVars, body)
+  mod.addFunction('main', binaryen.createType([]), binaryen.none, functionVars, body)
   mod.addFunctionExport('main', '_start')
 
   if (!mod.validate()) throw Error('Validation error.')
@@ -125,30 +125,8 @@ function compileStatement(stmt: Stmt): binaryen.ExpressionRef {
 
       return mod.if(condition, thenBranch)
     }
-    case 'FunDecl': {
-      let name = stmt.name.lexeme
-      let paramTypes = binaryen.createType(Array(stmt.params.length).fill(binaryen.i32))
-
-      let returnType = binaryen.none
-      if (stmt.returnType == TokenType.TYPE_INT) {
-        returnType = binaryen.i32
-      }
-
-      let valueReturnType = returnType == binaryen.i32 ? TokenType.TYPE_INT : TokenType.TYPE_NIL
-      functionTable.set(name, { returnType: valueReturnType })
-
-      // Each function gets a blank state with nothing but the arguments passed in. That is, a function cannot access variables declared outside it's scope.
-      currentFunctionVars = []
-      beginScope()
-      for (let p of stmt.params) {
-        defineVariable(p.name, p.type)
-      }
-      let body = compileStatement(stmt.body)
-      endScope()
-
-      mod.addFunction(name, paramTypes, returnType, [], body)
-      return mod.nop()
-    }
+    case 'FunDecl':
+      return funDeclaration(stmt)
     case 'ReturnStmt': {
       let val = compileExpression(stmt.value)
       return mod.return(val)
@@ -160,6 +138,37 @@ function compileStatement(stmt: Stmt): binaryen.ExpressionRef {
       throw Error('Unsupported statement.')
     }
   }
+}
+
+function funDeclaration(stmt: FunDecl): binaryen.ExpressionRef {
+  let name = stmt.name.lexeme
+  let paramTypes = binaryen.createType(Array(stmt.params.length).fill(binaryen.i32))
+
+  let returnType = binaryen.none
+  if (stmt.returnType == TokenType.TYPE_INT) {
+    returnType = binaryen.i32
+  }
+
+  let valueReturnType = returnType == binaryen.i32 ? TokenType.TYPE_INT : TokenType.TYPE_NIL
+  functionTable.set(name, { returnType: valueReturnType })
+
+  // Each function gets a blank state with nothing but the arguments passed in. That is, a function cannot access variables declared outside it's scope.
+
+  // Store the current function variables before entering the function
+  let currentFunctionVars = functionVars
+  functionVars = []
+
+  beginScope()
+  for (let p of stmt.params) {
+    defineVariable(p.name, p.type)
+  }
+  let body = compileStatement(stmt.body)
+  endScope()
+
+  mod.addFunction(name, paramTypes, returnType, functionVars, body)
+  // Reset the function variables to what it was before entering the function
+  functionVars = currentFunctionVars
+  return mod.nop()
 }
 
 function forStatement(forStmt: ForStmt): binaryen.ExpressionRef {
@@ -418,13 +427,13 @@ function defineVariable(name: string, type: ValueType, strLen?: number): Variabl
   }
 
   const info: VariableInfo = {
-    index: currentFunctionVars.length,
+    index: functionVars.length,
     type,
     strLen,
   }
 
   currentScope?.set(name, info)
-  currentFunctionVars.push(tokenTypeToBinaryen.get(type))
+  functionVars.push(tokenTypeToBinaryen.get(type))
   return info
 }
 
