@@ -5,8 +5,6 @@ import type { ForStmt, Stmt } from './Stmt'
 import { COMPILE_ERROR, reportError } from './error'
 import type { ValueType } from './ValueType'
 
-// TODO: Make module a global variable so it doesn't have to be passed to each function. The source file will always be compiled to a single module - importing helper functions from other modules
-
 let strLiteralMemoryPos = 1024
 let loopCounter = 0
 
@@ -71,11 +69,12 @@ function endScope() {
   scopes.pop()
 }
 
+let mod: binaryen.Module
 export default function compile(statements: Stmt[]) {
-  const module = new binaryen.Module()
-  module.setMemory(1, 2, 'memory')
+  mod = new binaryen.Module()
+  mod.setMemory(1, 2, 'memory')
 
-  module.addFunctionImport(
+  mod.addFunctionImport(
     'write',
     'wasi_snapshot_preview1',
     'fd_write',
@@ -83,7 +82,7 @@ export default function compile(statements: Stmt[]) {
     binaryen.i32
   )
 
-  module.addFunctionImport(
+  mod.addFunctionImport(
     'itoa',
     'utils',
     'itoa',
@@ -95,31 +94,31 @@ export default function compile(statements: Stmt[]) {
   currentFunctionVarCount = 0
 
   beginScope()
-  const body = program(module, statements)
+  const body = program(statements)
   endScope()
 
-  module.addFunction('main', binaryen.createType([]), binaryen.none, currentFunctionVars, body)
-  module.addFunctionExport('main', '_start')
+  mod.addFunction('main', binaryen.createType([]), binaryen.none, currentFunctionVars, body)
+  mod.addFunctionExport('main', '_start')
 
-  if (!module.validate()) throw Error('Validation error.')
+  if (!mod.validate()) throw Error('Validation error.')
 
-  const wat = module.emitText()
+  const wat = mod.emitText()
   return wat
 }
 
-function program(module: binaryen.Module, statements: Stmt[]) {
+function program(statements: Stmt[]) {
   let res = []
   for (let stmt of statements) {
-    res.push(compileStatement(module, stmt))
+    res.push(compileStatement(stmt))
   }
 
-  return module.block(null, res, binaryen.none)
+  return mod.block(null, res, binaryen.none)
 }
 
-function compileStatement(module: binaryen.Module, stmt: Stmt): binaryen.ExpressionRef {
+function compileStatement(stmt: Stmt): binaryen.ExpressionRef {
   switch (stmt.type) {
     case 'ExprStmt': {
-      let expr = compileExpression(module, stmt.expression)
+      let expr = compileExpression(stmt.expression)
 
       if (stmt.expression.type == 'CallExpr') {
         let fnName = stmt.expression.callee.name.lexeme
@@ -130,7 +129,7 @@ function compileStatement(module: binaryen.Module, stmt: Stmt): binaryen.Express
         return expr
       }
 
-      return module.drop(expr)
+      return mod.drop(expr)
     }
     case 'VariableStmt': {
       let varType = TokenType.TYPE_INT
@@ -144,27 +143,27 @@ function compileStatement(module: binaryen.Module, stmt: Stmt): binaryen.Express
         }
       }
 
-      let expr = compileExpression(module, stmt.initializer)
+      let expr = compileExpression(stmt.initializer)
 
       let varName = stmt.name.lexeme
       let varInfo = defineVariable(varName, varType, strLen)
-      return module.local.set(varInfo.index, expr)
+      return mod.local.set(varInfo.index, expr)
     }
     case 'BlockStmt': {
       // Is there no difference between the way a program is compiled and a block is? Maybe later once we get to functions?
       // They do differ - a program always returns none type - but a block may have a return statement and thus a return type when it's part of a function
       let statements = stmt.statements
-      return program(module, statements)
+      return program(statements)
     }
     case 'IfStmt': {
-      let condition = compileExpression(module, stmt.condition)
-      let thenBranch = compileStatement(module, stmt.thenBranch)
+      let condition = compileExpression(stmt.condition)
+      let thenBranch = compileStatement(stmt.thenBranch)
       if (stmt.elseBranch) {
-        let elseBranch = compileStatement(module, stmt.elseBranch)
-        return module.if(condition, thenBranch, elseBranch)
+        let elseBranch = compileStatement(stmt.elseBranch)
+        return mod.if(condition, thenBranch, elseBranch)
       }
 
-      return module.if(condition, thenBranch)
+      return mod.if(condition, thenBranch)
     }
     case 'FunDecl': {
       let name = stmt.name.lexeme
@@ -185,18 +184,18 @@ function compileStatement(module: binaryen.Module, stmt: Stmt): binaryen.Express
       for (let p of stmt.params) {
         defineVariable(p.name, p.type)
       }
-      let body = compileStatement(module, stmt.body)
+      let body = compileStatement(stmt.body)
       endScope()
 
-      module.addFunction(name, paramTypes, returnType, [], body)
-      return module.nop()
+      mod.addFunction(name, paramTypes, returnType, [], body)
+      return mod.nop()
     }
     case 'ReturnStmt': {
-      let val = compileExpression(module, stmt.value)
-      return module.return(val)
+      let val = compileExpression(stmt.value)
+      return mod.return(val)
     }
     case 'ForStmt':
-      return forStatement(module, stmt)
+      return forStatement(stmt)
     default: {
       console.error(stmt)
       throw Error('Unsupported statement.')
@@ -204,51 +203,45 @@ function compileStatement(module: binaryen.Module, stmt: Stmt): binaryen.Express
   }
 }
 
-function forStatement(module: binaryen.Module, forStmt: ForStmt): binaryen.ExpressionRef {
+function forStatement(forStmt: ForStmt): binaryen.ExpressionRef {
   let loopId = loopCounter++
   let loopLabel = `loop_${loopId}`
   let blockLabel = `block_${loopId}`
 
   beginScope()
   let loopVarInfo = defineVariable(forStmt.variable, TokenType.TYPE_INT)
-  let initializer = module.local.set(loopVarInfo.index, module.i32.const(forStmt.start))
-  let body = compileStatement(module, forStmt.body)
+  let initializer = mod.local.set(loopVarInfo.index, mod.i32.const(forStmt.start))
+  let body = compileStatement(forStmt.body)
   endScope()
 
-  let increment = module.local.set(
+  let increment = mod.local.set(
     loopVarInfo.index,
-    module.i32.add(module.local.get(loopVarInfo.index, binaryen.i32), module.i32.const(1))
+    mod.i32.add(mod.local.get(loopVarInfo.index, binaryen.i32), mod.i32.const(1))
   )
 
-  let condition = module.i32.ge_s(
-    module.local.get(loopVarInfo.index, binaryen.i32),
-    module.i32.const(forStmt.end)
+  let condition = mod.i32.ge_s(
+    mod.local.get(loopVarInfo.index, binaryen.i32),
+    mod.i32.const(forStmt.end)
   )
 
-  return module.block(null, [
+  return mod.block(null, [
     initializer,
-    module.block(blockLabel, [
-      module.loop(
+    mod.block(blockLabel, [
+      mod.loop(
         loopLabel,
-        module.block(null, [
-          module.br_if(blockLabel, condition),
-          body,
-          increment,
-          module.br(loopLabel),
-        ])
+        mod.block(null, [mod.br_if(blockLabel, condition), body, increment, mod.br(loopLabel)])
       ),
     ]),
   ])
 }
 
 function callWrite(
-  module: binaryen.Module,
   expr?: binaryen.ExpressionRef,
   strLen?: binaryen.ExpressionRef,
-  bufferPtr: number = module.i32.const(66)
+  bufferPtr: number = mod.i32.const(66)
 ) {
   if (expr && !strLen) {
-    strLen = module.call('itoa', [expr, bufferPtr], binaryen.i32)
+    strLen = mod.call('itoa', [expr, bufferPtr], binaryen.i32)
   }
 
   // ewww - when we print an int we pass expr, when we print a string we pass strlen - both are never passed - modify the function so we don't need this check below
@@ -256,19 +249,19 @@ function callWrite(
     throw Error('Failed to compute strLen')
   }
 
-  return module.block(null, [
+  return mod.block(null, [
     // iovec structure
-    module.i32.store(0, 4, module.i32.const(0), bufferPtr),
-    module.i32.store(0, 4, module.i32.const(4), strLen),
+    mod.i32.store(0, 4, mod.i32.const(0), bufferPtr),
+    mod.i32.store(0, 4, mod.i32.const(4), strLen),
 
-    module.drop(
-      module.call(
+    mod.drop(
+      mod.call(
         'write',
         [
-          module.i32.const(1), // stdout
-          module.i32.const(0), // iovec start address
-          module.i32.const(1), // read this many iovecs
-          module.i32.const(92), // nwritten
+          mod.i32.const(1), // stdout
+          mod.i32.const(0), // iovec start address
+          mod.i32.const(1), // read this many iovecs
+          mod.i32.const(92), // nwritten
         ],
         binaryen.i32
       )
@@ -276,87 +269,84 @@ function callWrite(
   ])
 }
 
-function compileExpression(module: binaryen.Module, expression: Expr): binaryen.ExpressionRef {
+function compileExpression(expression: Expr): binaryen.ExpressionRef {
   switch (expression.type) {
     case 'BinaryExpr':
-      return binaryExpression(module, expression)
+      return binaryExpression(expression)
     case 'LiteralExpr':
-      return literalExpression(module, expression)
+      return literalExpression(expression)
     case 'VariableExpr': {
       let varName = expression.name.lexeme
       let varInfo = findVariable(varName)
       if (varInfo) {
-        return module.local.get(varInfo.index, binaryen.i32)
+        return mod.local.get(varInfo.index, binaryen.i32)
       } else {
         throw Error('Access to undefined variable.')
       }
     }
     case 'GroupingExpr':
-      return compileExpression(module, expression.expression)
+      return compileExpression(expression.expression)
     case 'UnaryExpr':
-      return unaryExpression(module, expression)
+      return unaryExpression(expression)
     case 'CallExpr':
-      return callExpression(module, expression)
+      return callExpression(expression)
     case 'AssignExpr':
-      return assignExpression(module, expression)
+      return assignExpression(expression)
     default:
       console.error(expression)
       throw Error('Unsupported ast type.')
   }
 }
 
-function binaryExpression(module: binaryen.Module, expression: BinaryExpr): binaryen.ExpressionRef {
-  const left = compileExpression(module, expression.left)
-  const right = compileExpression(module, expression.right)
+function binaryExpression(expression: BinaryExpr): binaryen.ExpressionRef {
+  const left = compileExpression(expression.left)
+  const right = compileExpression(expression.right)
 
   switch (expression.operator.type) {
     case TokenType.PLUS:
-      return module.i32.add(left, right)
+      return mod.i32.add(left, right)
     case TokenType.MINUS:
-      return module.i32.sub(left, right)
+      return mod.i32.sub(left, right)
     case TokenType.SLASH:
-      return module.i32.div_s(left, right)
+      return mod.i32.div_s(left, right)
     case TokenType.STAR:
-      return module.i32.mul(left, right)
+      return mod.i32.mul(left, right)
     case TokenType.LESS:
-      return module.i32.lt_s(left, right)
+      return mod.i32.lt_s(left, right)
     case TokenType.LESS_EQUAL:
-      return module.i32.le_s(left, right)
+      return mod.i32.le_s(left, right)
     case TokenType.GREATER:
-      return module.i32.gt_s(left, right)
+      return mod.i32.gt_s(left, right)
     case TokenType.GREATER_EQUAL:
-      return module.i32.ge_s(left, right)
+      return mod.i32.ge_s(left, right)
     case TokenType.EQUAL_EQUAL:
-      return module.i32.eq(left, right)
+      return mod.i32.eq(left, right)
     case TokenType.BANG_EQUAL:
-      return module.i32.ne(left, right)
+      return mod.i32.ne(left, right)
     default:
       reportError(expression.operator, 'Unsupported binary operator.', COMPILE_ERROR)
   }
 }
 
-function literalExpression(
-  module: binaryen.Module,
-  expression: LiteralExpr
-): binaryen.ExpressionRef {
+function literalExpression(expression: LiteralExpr): binaryen.ExpressionRef {
   switch (typeof expression.value) {
     case 'number':
-      return module.i32.const(expression.value)
+      return mod.i32.const(expression.value)
     case 'boolean':
-      return module.i32.const(expression.value ? 1 : 0)
+      return mod.i32.const(expression.value ? 1 : 0)
     case 'string':
-      return stringExpression(module, expression)
+      return stringExpression(expression)
     default:
       console.error(expression)
       throw Error('Unsupported literal expression.')
   }
 }
 
-function unaryExpression(module: binaryen.Module, expression: UnaryExpr): binaryen.ExpressionRef {
+function unaryExpression(expression: UnaryExpr): binaryen.ExpressionRef {
   switch (expression.operator.type) {
     case TokenType.MINUS: {
-      let expr = compileExpression(module, expression.right)
-      return module.i32.sub(module.i32.const(0), expr)
+      let expr = compileExpression(expression.right)
+      return mod.i32.sub(mod.i32.const(0), expr)
     }
     default:
       console.error(expression.operator)
@@ -364,7 +354,7 @@ function unaryExpression(module: binaryen.Module, expression: UnaryExpr): binary
   }
 }
 
-function printFunction(module: binaryen.Module, expression: CallExpr): binaryen.ExpressionRef {
+function printFunction(expression: CallExpr): binaryen.ExpressionRef {
   let argExpr = expression.args[0]!
 
   if (argExpr.type == 'VariableExpr') {
@@ -375,14 +365,14 @@ function printFunction(module: binaryen.Module, expression: CallExpr): binaryen.
     }
 
     if (varInfo.type == TokenType.TYPE_STR) {
-      let strAddress = module.local.get(varInfo.index, binaryen.i32)
+      let strAddress = mod.local.get(varInfo.index, binaryen.i32)
       if (!varInfo.strLen) {
         throw Error('Unable to compute string length at compile time')
       }
-      return callWrite(module, undefined, module.i32.const(varInfo.strLen), strAddress)
+      return callWrite(undefined, mod.i32.const(varInfo.strLen), strAddress)
     } else {
       // Handles non literals like 42 + 3
-      return callWrite(module, compileExpression(module, argExpr))
+      return callWrite(compileExpression(argExpr))
     }
   }
 
@@ -393,33 +383,28 @@ function printFunction(module: binaryen.Module, expression: CallExpr): binaryen.
 
     const TEMP_STR_LITERAL_POS = 2048
 
-    return module.block(null, [
-      module.drop(stringExpression(module, argExpr, TEMP_STR_LITERAL_POS)),
-      callWrite(
-        module,
-        undefined,
-        module.i32.const(strLen),
-        module.i32.const(TEMP_STR_LITERAL_POS)
-      ),
+    return mod.block(null, [
+      mod.drop(stringExpression(argExpr, TEMP_STR_LITERAL_POS)),
+      callWrite(undefined, mod.i32.const(strLen), mod.i32.const(TEMP_STR_LITERAL_POS)),
     ])
   } else {
-    return callWrite(module, compileExpression(module, argExpr))
+    return callWrite(compileExpression(argExpr))
   }
 }
 
-function callExpression(module: binaryen.Module, expression: CallExpr): binaryen.ExpressionRef {
+function callExpression(expression: CallExpr): binaryen.ExpressionRef {
   let fnName = expression.callee.name.lexeme
   if (fnName == 'println') {
-    return printFunction(module, expression)
+    return printFunction(expression)
   }
 
-  let args = expression.args.map((arg) => compileExpression(module, arg))
+  let args = expression.args.map((arg) => compileExpression(arg))
   let returnType: ValueType = functionTable.get(fnName)!.returnType
 
-  return module.call(fnName, args, tokenTypeToBinaryen.get(returnType))
+  return mod.call(fnName, args, tokenTypeToBinaryen.get(returnType))
 }
 
-function assignExpression(module: binaryen.Module, expr: AssignExpr): binaryen.ExpressionRef {
+function assignExpression(expr: AssignExpr): binaryen.ExpressionRef {
   let varName = expr.name.lexeme
   let varInfo = findVariable(varName)
   if (!varInfo) {
@@ -435,12 +420,11 @@ function assignExpression(module: binaryen.Module, expr: AssignExpr): binaryen.E
     }
   }
 
-  let value = compileExpression(module, expr.value)
-  return module.local.set(varInfo.index, value)
+  let value = compileExpression(expr.value)
+  return mod.local.set(varInfo.index, value)
 }
 
 function stringExpression(
-  module: binaryen.Module,
   expr: LiteralExpr,
   storagePos: number = strLiteralMemoryPos
 ): binaryen.ExpressionRef {
@@ -451,16 +435,14 @@ function stringExpression(
   let instrs = []
 
   for (let [i, charCode] of strArr.entries()) {
-    instrs.push(
-      module.i32.store8(0, 1, module.i32.const(storagePos + i), module.i32.const(charCode))
-    )
+    instrs.push(mod.i32.store8(0, 1, mod.i32.const(storagePos + i), mod.i32.const(charCode)))
   }
 
-  instrs.push(module.i32.const(storagePos))
+  instrs.push(mod.i32.const(storagePos))
 
   if (arguments.length < 3) {
     strLiteralMemoryPos += strArr.length
   }
 
-  return module.block(null, instrs, binaryen.i32)
+  return mod.block(null, instrs, binaryen.i32)
 }
