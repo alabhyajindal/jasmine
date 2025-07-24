@@ -1,0 +1,16 @@
+fn fib(n: int) -> int {
+    let a: int = 0;
+    let b: int = 1;
+
+    for i in 1..10 {
+        let temp: int = a + b;
+        a = b;
+        b = temp;
+    }
+    
+    return b;
+}
+
+// some issue with block scope and variable index
+
+println(fib(10));

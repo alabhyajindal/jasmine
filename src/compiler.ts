@@ -31,7 +31,7 @@ let functionTable: Map<string, FunctionInfo> = new Map([
   ['println', { returnType: TokenType.TYPE_NIL }],
 ])
 
-export default function compile(statements: Stmt[]) {
+export default function compile(stmt: Stmt[]) {
   mod = new binaryen.Module()
   mod.setMemory(1, 2, 'memory')
 
@@ -52,7 +52,7 @@ export default function compile(statements: Stmt[]) {
   )
 
   beginScope()
-  const body = program(statements)
+  const body = compileStatements(stmt)
   endScope()
 
   mod.addFunction('main', binaryen.createType([]), binaryen.none, currentFunctionVars, body)
@@ -64,9 +64,9 @@ export default function compile(statements: Stmt[]) {
   return wat
 }
 
-function program(statements: Stmt[]) {
+function compileStatements(stmts: Stmt[]) {
   let res = []
-  for (let stmt of statements) {
+  for (let stmt of stmts) {
     res.push(compileStatement(stmt))
   }
 
@@ -109,10 +109,11 @@ function compileStatement(stmt: Stmt): binaryen.ExpressionRef {
       return mod.local.set(varInfo.index, expr)
     }
     case 'BlockStmt': {
-      // Is there no difference between the way a program is compiled and a block is? Maybe later once we get to functions?
-      // They do differ - a program always returns none type - but a block may have a return statement and thus a return type when it's part of a function
-      let statements = stmt.statements
-      return program(statements)
+      beginScope()
+      let stmts = stmt.statements
+      let res = compileStatements(stmts)
+      endScope()
+      return res
     }
     case 'IfStmt': {
       let condition = compileExpression(stmt.condition)

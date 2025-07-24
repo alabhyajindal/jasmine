@@ -35,6 +35,10 @@ Bun.write(outPath, wat)
 
 let out = (await $`bun make ${sourcePath}`.text()).trim().split('\n')
 
+test('output count matches expectation', () => {
+  expect(out.length).toBe(allExpected.length)
+})
+
 for (let [i, ex] of allExpected.entries()) {
   test(`${ex.fileName}`, () => {
     let { expected } = ex
