@@ -18,7 +18,6 @@ interface VariableInfo {
 let mod: binaryen.Module
 let scopes: Map<string, VariableInfo>[] = []
 let currentFunctionVars: binaryen.Type[] = []
-let currentFunctionVarCount = 0
 let strLiteralMemoryPos = 1024
 let loopCounter = 0
 
@@ -51,9 +50,6 @@ export default function compile(statements: Stmt[]) {
     binaryen.createType([binaryen.i32, binaryen.i32]),
     binaryen.i32
   )
-
-  currentFunctionVars = []
-  currentFunctionVarCount = 0
 
   beginScope()
   const body = program(statements)
@@ -141,8 +137,7 @@ function compileStatement(stmt: Stmt): binaryen.ExpressionRef {
       functionTable.set(name, { returnType: valueReturnType })
 
       // Each function gets a blank state with nothing but the arguments passed in. That is, a function cannot access variables declared outside it's scope.
-
-      currentFunctionVarCount = 0
+      currentFunctionVars = []
       beginScope()
       for (let p of stmt.params) {
         defineVariable(p.name, p.type)
@@ -422,7 +417,7 @@ function defineVariable(name: string, type: ValueType, strLen?: number): Variabl
   }
 
   const info: VariableInfo = {
-    index: currentFunctionVarCount++,
+    index: currentFunctionVars.length,
     type,
     strLen,
   }
