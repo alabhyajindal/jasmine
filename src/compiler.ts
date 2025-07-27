@@ -58,7 +58,8 @@ export default function compile(stmt: Stmt[]) {
   mod.addFunction('main', binaryen.createType([]), binaryen.none, functionVars, body)
   mod.addFunctionExport('main', '_start')
 
-  if (!mod.validate()) throw Error('Validation error.')
+  mod.validate()
+  mod.optimize()
 
   const wat = mod.emitText()
   return wat

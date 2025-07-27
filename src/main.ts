@@ -56,5 +56,5 @@ async function run(source: string) {
 
   Bun.write('build/main.wat', wat)
 
-  await $`wasm-merge build/main.wat main lib/utils.wat utils -o build/a.wat --enable-multimemory --emit-text`
+  await $`wasm-merge build/main.wat main lib/utils.wasm utils -o build/a.wasm --enable-multimemory`
 }

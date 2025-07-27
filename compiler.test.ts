@@ -26,7 +26,7 @@ Bun.write(sourcePath, entireSource)
 // Compile the joined source file
 await $`bun compile ${sourcePath}`
 // Execute the joined source file with Wasmtime
-let out = (await $`wasmtime build/a.wat`.text()).trim().split('\n')
+let out = (await $`wasmtime build/a.wasm`.text()).trim().split('\n')
 
 test('output count matches expectation', () => {
   expect(out.length).toBe(allExpected.length)
