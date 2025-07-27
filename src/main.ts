@@ -1,3 +1,4 @@
+import { $ } from 'bun'
 import scan from './scanner'
 import parse from './parser'
 import compile from './compiler'
@@ -54,4 +55,6 @@ async function run(source: string) {
   }
 
   Bun.write('build/main.wat', wat)
+
+  await $`wasm-merge build/main.wat main lib/utils.wat utils -o build/a.wat --enable-multimemory --emit-text`
 }

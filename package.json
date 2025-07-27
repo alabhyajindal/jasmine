@@ -5,8 +5,7 @@
   "private": true,
   "scripts": {
     "watch": "bun --watch src/main.ts",
-    "compile": "bun src/main.ts",
-    "make": "./make.sh"
+    "compile": "bun src/main.ts"
   },
   "devDependencies": {
     "@types/bun": "latest"

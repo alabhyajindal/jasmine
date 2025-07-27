@@ -1,9 +1,6 @@
-import { readdir } from 'node:fs/promises'
-import { expect, test } from 'bun:test'
-import scan from './src/scanner'
-import parse from './src/parser'
-import compile from './src/compiler'
 import { $ } from 'bun'
+import { expect, test } from 'bun:test'
+import { readdir } from 'node:fs/promises'
 
 const testDir = './tests'
 const buildDir = './build'
@@ -24,16 +21,12 @@ for (const fileName of fileNames) {
 }
 
 let sourcePath = buildDir + '/' + 'input.jas'
-let outPath = buildDir + '/' + 'main.wat'
-
 Bun.write(sourcePath, entireSource)
 
-let tokens = scan(entireSource)
-let statements = parse(tokens)
-let wat = compile(statements)
-Bun.write(outPath, wat)
-
-let out = (await $`bun make ${sourcePath}`.text()).trim().split('\n')
+// Compile the joined source file
+await $`bun compile ${sourcePath}`
+// Execute the joined source file with Wasmtime
+let out = (await $`wasmtime build/a.wat`.text()).trim().split('\n')
 
 test('output count matches expectation', () => {
   expect(out.length).toBe(allExpected.length)
