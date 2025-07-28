@@ -1,10 +1,13 @@
 program     →  statement* EOF 
-statement   →  var_stmt | expr_stmt | fun_decl | return_stmt 
-var_stmt    →  "let" IDENTIFIER "=" expression ";" 
-expr_stmt   →  expression ";" 
-fun_decl    →  "fn" function 
-return_stmt →  "return" expression? ";" 
+statement   →  assign_stmt | block | expr_stmt | for_stmt | fun_decl | if_stmt | return_stmt | var_stmt 
+assign_stmt →  IDENTIFIER "=" expression ";"
 block       →  "{" statement* "}" 
+expr_stmt   →  expression ";" 
+for_stmt    →  "for" IDENTIFIER "in" expression ".." expression block
+fun_decl    →  "fn" function 
+if_stmt     →  "if" expression block ("else" "if" expression block)* ("else" block)?
+return_stmt →  "return" expression? ";" 
+var_stmt    →  "let" IDENTIFIER ":" type "=" expression ";" 
 
 
 expression  →  equality 
@@ -13,9 +16,11 @@ comparison  →  term ( ( ">" | ">=" | "<" | "<=" ) term )*
 term        →  factor ( ( "+" | "-" ) factor )* 
 factor      →  unary ( ( "/" | "*" ) unary )* 
 unary       →  ( "!" | "-" ) unary | call 
-call        →  primary ( "(" argument? ")" )? 
-primary     →  NUMBER | IDENTIFIER | "(" expression ")" 
+call        →  primary ( "(" arguments? ")" )? 
+primary     →  NUMBER | STRING | IDENTIFIER | "(" expression ")" 
 
-function    →  IDENTIFIER "(" parameters? ")" block 
-parameters  →  IDENTIFIER  ( "," IDENTIFIER )* 
+function    →  IDENTIFIER "(" parameters? ")" "->" type block 
+parameters  →  parameter ( "," parameter )*
+parameter   →  IDENTIFIER  ":" type
 arguments   →  expression ( "," expression )* 
+type        →  "int" | "str" | "nil"
