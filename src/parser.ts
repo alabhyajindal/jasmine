@@ -298,6 +298,9 @@ function previous() {
   return tokens[current - 1]!
 }
 
+/**
+ * Check if the next token is of the expected type. Expected Token types can be a single type or multiple, passed in as an array.
+ */
 function consume<T extends TokenType>(type: readonly T[] | T, msg: string): Token & { type: T } {
   const types = Array.isArray(type) ? type : [type]
 
@@ -306,5 +309,5 @@ function consume<T extends TokenType>(type: readonly T[] | T, msg: string): Toke
       return advance() as Token & { type: T }
     }
   }
-  reportError(peek(), msg)
+  reportError(previous(), msg)
 }
