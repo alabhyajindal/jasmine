@@ -24,7 +24,7 @@ let sourcePath = buildDir + '/' + 'input.jas'
 Bun.write(sourcePath, entireSource)
 
 // Compile the joined source file
-await $`bun compile ${sourcePath}`
+await $`bun compile ${sourcePath} --target binaryen`
 // Execute the joined source file with Wasmtime
 let out = (await $`wasmtime build/a.wasm`.text()).trim().split('\n')
 
