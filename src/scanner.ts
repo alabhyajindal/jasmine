@@ -119,7 +119,7 @@ function scanToken() {
         identifier()
       } else {
         console.error(c)
-        throw Error('Not implemented.')
+        reportError(`Invalid character ${peek()}.`)
       }
   }
 }
@@ -172,8 +172,7 @@ function string() {
   }
 
   if (isAtEnd()) {
-    console.error(`[line ${line}]: Unterminated string.`)
-    throw Error()
+    reportError('Unterminated string.')
   }
 
   advance()

@@ -136,7 +136,7 @@ function compileStatement(stmt: Stmt): binaryen.ExpressionRef {
       return forStatement(stmt)
     default: {
       console.error(stmt)
-      throw Error('Unsupported statement.')
+      reportError('Unsupported statement.')
     }
   }
 }
@@ -217,7 +217,7 @@ function compileExpression(expression: Expr): binaryen.ExpressionRef {
       if (varInfo) {
         return mod.local.get(varInfo.index, binaryen.i32)
       } else {
-        throw Error('Access to undefined variable.')
+        reportError('Access to undefined variable.')
       }
     }
     case 'GroupingExpr':
@@ -230,7 +230,7 @@ function compileExpression(expression: Expr): binaryen.ExpressionRef {
       return assignExpression(expression)
     default:
       console.error(expression)
-      throw Error('Unsupported ast type.')
+      reportError('Unsupported ast type.')
   }
 }
 
@@ -260,7 +260,7 @@ function binaryExpression(expression: BinaryExpr): binaryen.ExpressionRef {
     case TokenType.BANG_EQUAL:
       return mod.i32.ne(left, right)
     default:
-      reportError(expression.operator, 'Unsupported binary operator.')
+      reportError('Unsupported binary operator.', expression.operator)
   }
 }
 
@@ -296,7 +296,7 @@ function literalExpression(
     }
     default:
       console.error(expression)
-      throw Error('Unsupported literal expression.')
+      reportError('Unsupported literal expression.')
   }
 }
 
@@ -308,7 +308,7 @@ function unaryExpression(expression: UnaryExpr): binaryen.ExpressionRef {
     }
     default:
       console.error(expression.operator)
-      throw Error(`Unsupported binary operator.`)
+      reportError(`Unsupported binary operator.`)
   }
 }
 
@@ -328,7 +328,7 @@ function assignExpression(expr: AssignExpr): binaryen.ExpressionRef {
   let varName = expr.name.lexeme
   let varInfo = findVariable(varName)
   if (!varInfo) {
-    throw Error('Cannot assign to undeclared variable.')
+    reportError('Cannot assign to undeclared variable.')
   }
 
   if (varInfo.type == TokenType.TYPE_STR) {
@@ -336,7 +336,7 @@ function assignExpression(expr: AssignExpr): binaryen.ExpressionRef {
       let newStrLen = new TextEncoder().encode(expr.value.value + '\n').length
       varInfo.strLen = newStrLen
     } else {
-      throw Error('String variables can only be reassigned to literals.')
+      reportError('String variables can only be reassigned to literals.')
     }
   }
 
@@ -352,13 +352,13 @@ function printFunction(expression: CallExpr): binaryen.ExpressionRef {
     let identifier = argExpr.name.lexeme
     let varInfo = findVariable(identifier)
     if (!varInfo) {
-      throw Error('Undefined variable - print function')
+      reportError('Undefined variable - print function')
     }
 
     if (varInfo.type == TokenType.TYPE_STR) {
       let strAddress = mod.local.get(varInfo.index, binaryen.i32)
       if (!varInfo.strLen) {
-        throw Error('Unable to compute string length at compile time')
+        reportError('Unable to compute string length at compile time')
       }
       return callWrite(undefined, mod.i32.const(varInfo.strLen), strAddress)
     } else {
@@ -395,7 +395,7 @@ function callWrite(
 
   // ewww - when we print an int we pass expr, when we print a string we pass strlen - both are never passed - modify the function so we don't need this check below
   if (!strLen) {
-    throw Error('Failed to compute strLen')
+    reportError('Failed to compute strLen')
   }
 
   return mod.block(null, [
@@ -424,7 +424,7 @@ function callWrite(
 function defineVariable(name: string, type: ValueType, strLen?: number): VariableInfo {
   let currentScope = scopes[scopes.length - 1]
   if (currentScope?.has(name)) {
-    throw Error('the variable already exists in the current scope.')
+    reportError('the variable already exists in the current scope.')
   }
 
   const info: VariableInfo = {

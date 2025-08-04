@@ -41,12 +41,8 @@ async function run(source: string) {
   // return
 
   const wat = compile(statements)
-
-  if (!wat) {
-    throw Error('Failed to generate binary.')
-  }
+  if (!wat) reportError('Compilation failed.')
 
   Bun.write('build/main.wat', wat)
-
   await $`wasm-merge build/main.wat main lib/utils.wasm utils -o build/a.wasm --enable-multimemory`
 }

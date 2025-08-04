@@ -157,7 +157,7 @@ function assignment(): Expr {
       let name = expr.name
       return { name, value, type: 'AssignExpr' }
     }
-    reportError(equals, 'Invalid variable assignment.')
+    reportError('Invalid variable assignment.', equals)
   }
 
   return expr
@@ -230,7 +230,7 @@ function call(): Expr {
     }
     if (expr.type == 'VariableExpr' && expr.name.lexeme == 'println') {
       if (args.length != 1) {
-        reportError(peek(), 'println expects a single argument.')
+        reportError('println expects a single argument.', peek())
       }
     }
 
@@ -263,7 +263,7 @@ function primary(): Expr {
     return { expression: expr, type: 'GroupingExpr' }
   }
 
-  reportError(peek(), 'Invalid literal expression.')
+  reportError('Invalid literal expression.', peek())
 }
 
 function match(...types: TokenType[]) {
@@ -309,5 +309,5 @@ function consume<T extends TokenType>(type: readonly T[] | T, msg: string): Toke
       return advance() as Token & { type: T }
     }
   }
-  reportError(previous(), msg)
+  reportError(msg, previous())
 }
