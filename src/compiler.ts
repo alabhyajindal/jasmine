@@ -2,7 +2,7 @@ import binaryen from 'binaryen'
 import type { AssignExpr, BinaryExpr, CallExpr, Expr, LiteralExpr, UnaryExpr } from './Expr'
 import TokenType from './TokenType'
 import type { ForStmt, FunDecl, Stmt } from './Stmt'
-import { COMPILE_ERROR, reportError } from './error'
+import { reportError } from './error'
 import type { ValueType } from './ValueType'
 
 type FunctionInfo = {
@@ -260,7 +260,7 @@ function binaryExpression(expression: BinaryExpr): binaryen.ExpressionRef {
     case TokenType.BANG_EQUAL:
       return mod.i32.ne(left, right)
     default:
-      reportError(expression.operator, 'Unsupported binary operator.', COMPILE_ERROR)
+      reportError(expression.operator, 'Unsupported binary operator.')
   }
 }
 

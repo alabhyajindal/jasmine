@@ -1,4 +1,4 @@
-import { PARSE_ERROR, reportError } from './error'
+import { reportError } from './error'
 import type { Expr, VariableExpr } from './Expr'
 import type {
   BlockStmt,
@@ -157,7 +157,7 @@ function assignment(): Expr {
       let name = expr.name
       return { name, value, type: 'AssignExpr' }
     }
-    reportError(equals, 'Invalid variable assignment.', PARSE_ERROR)
+    reportError(equals, 'Invalid variable assignment.')
   }
 
   return expr
@@ -230,7 +230,7 @@ function call(): Expr {
     }
     if (expr.type == 'VariableExpr' && expr.name.lexeme == 'println') {
       if (args.length != 1) {
-        reportError(peek(), 'println expects a single argument.', PARSE_ERROR)
+        reportError(peek(), 'println expects a single argument.')
       }
     }
 
@@ -263,7 +263,7 @@ function primary(): Expr {
     return { expression: expr, type: 'GroupingExpr' }
   }
 
-  reportError(peek(), 'Invalid literal expression.', PARSE_ERROR)
+  reportError(peek(), 'Invalid literal expression.')
 }
 
 function match(...types: TokenType[]) {
@@ -306,5 +306,5 @@ function consume<T extends TokenType>(type: readonly T[] | T, msg: string): Toke
       return advance() as Token & { type: T }
     }
   }
-  reportError(peek(), msg, PARSE_ERROR)
+  reportError(peek(), msg)
 }

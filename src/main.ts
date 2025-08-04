@@ -4,7 +4,6 @@ import parse from './parser'
 import compile from './compiler'
 // @ts-ignore Do not look for type declarations for the source language
 import source from '../__.jas'
-import { COMPILE_ERROR, PARSE_ERROR } from './error'
 
 let _ = source
 
@@ -29,14 +28,7 @@ if (args.length == 2) {
     process.exit()
   }
   const sourceText = await sourceFile.text()
-
-  try {
-    run(sourceText)
-  } catch (error) {
-    if (error != PARSE_ERROR && error != COMPILE_ERROR) {
-      throw error
-    }
-  }
+  run(sourceText)
 }
 
 async function run(source: string) {
