@@ -7,35 +7,25 @@ import source from '../__.jas'
 
 let _ = source
 
-const args = Bun.argv
+const args = Bun.argv.slice(2)
 
-// The first two arguments to are Bun and the file to be executed. This is true when the compiled binary is invoked as well.
-if (args.length == 2) {
-  console.log('Please provide the file name you want to compile.')
+const validCall = args.length == 3 && args[1] == '--target' && args[2] == 'binaryen'
+const filePath = args[0]!
+const targetValue = args[2]
+
+if (!validCall) {
+  console.log('Usage: bun compile <file.jas> --target binaryen')
   process.exit()
 }
 
-if (args.length == 5) {
-  const filePath = Bun.argv[2]!
-  const sourceFile = Bun.file(filePath)
-  const fileExists = await sourceFile.exists()
-  if (!fileExists) {
-    console.error(`File not found: ${filePath}.`)
-    process.exit()
-  }
-
-  const targetFlag = Bun.argv[3]
-  const targetValue = Bun.argv[4]
-  if (targetFlag == '--target' && targetValue == 'binaryen') {
-  } else {
-    console.log('Please provide the backend you want to use to the --target flag.')
-    console.log('Valid options: binaryen.')
-    process.exit()
-  }
-
-  const sourceText = await sourceFile.text()
-  run(sourceText)
+const sourceFile = Bun.file(filePath)
+if (!(await sourceFile.exists())) {
+  console.log(`File not found: ${filePath}.`)
+  process.exit()
 }
+
+const sourceText = await sourceFile.text()
+run(sourceText)
 
 async function run(source: string) {
   const tokens = scan(source)
