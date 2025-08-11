@@ -1,5 +1,10 @@
 // 5
+// 1
 
 if true {
     println(5);
+}
+
+if 5 == 5 {
+    println(1);
 }

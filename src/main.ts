@@ -12,7 +12,7 @@ const args = Bun.argv.slice(2)
 const validCall = args.length == 3 && args[1] == '--backend' && args[2] == 'binaryen'
 
 if (!validCall) {
-  console.log('Usage: bun compile <file.jas> --backend <binaryen | qbe>')
+  console.log('Usage: bun compile <file.jas> --backend <binaryen | wat>')
   process.exit()
 }
 
@@ -43,7 +43,7 @@ async function run(source: string) {
 
     Bun.write('build/main.wat', wat)
     await $`wasm-merge build/main.wat main lib/utils.wasm utils -o build/a.wasm --enable-multimemory`
-  } else if (backend == 'qbe') {
+  } else if (backend == 'wat') {
     // do something
   }
 }
