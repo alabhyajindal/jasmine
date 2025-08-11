@@ -1,5 +1,5 @@
 import { $ } from 'bun'
-import scan from './scanner'
+import scan from './lexer'
 import parse from './parser'
 import compile from './binaryen'
 // @ts-ignore Do not look for type declarations for the source language

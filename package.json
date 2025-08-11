@@ -5,7 +5,8 @@
   "private": true,
   "scripts": {
     "watch": "bun --watch src/main.ts",
-    "compile": "bun src/main.ts"
+    "compile": "bun src/main.ts",
+    "binaryen": "bun compile __.jas --backend binaryen && wasmtime build/a.wasm"
   },
   "devDependencies": {
     "@types/bun": "latest"

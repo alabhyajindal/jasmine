@@ -2,15 +2,15 @@ import { $ } from 'bun'
 import { expect, test } from 'bun:test'
 import { readdir } from 'node:fs/promises'
 
-const testDir = './tests'
+const jasmineProgramsDir = './tests/jasmine_programs'
 const buildDir = './build'
-const fileNames = await readdir(testDir)
+const fileNames = await readdir(jasmineProgramsDir)
 
 let entireSource = ''
 let allExpected = []
 
 for (const fileName of fileNames) {
-  let filePath = testDir + '/' + fileName
+  let filePath = jasmineProgramsDir + '/' + fileName
   let sourceText = await Bun.file(filePath).text()
   entireSource += sourceText
   entireSource += '\n\n\n'
