@@ -1,20 +1,24 @@
 import type { CallExpr, Expr } from './Expr'
 import type { Stmt } from './Stmt'
 
-let il = `
-# Define the string constant.
-data $my_string = { b "hello world", b 0 }
+let main: string[] = []
+let data: string[] = [`data $fmt = { b "%d\\n", b 0 }`]
 
-export function w $main() {
-@start
-`
-// %r =w call $puts(l $my_string)
+function formIL() {
+  return `
+  export function w $main() {
+  @start
+    ${main.join('\n')}
+    ret 0
+  }
+  
+  ${data}
+  `
+}
 
 export default function compile(stmts: Stmt[]) {
   compileStatements(stmts)
-  il += `
-ret 0
-}`
+  const il = formIL()
   Bun.write('build/qbe/il.ssa', il)
 }
 
@@ -58,6 +62,6 @@ function printFunction(expression: CallExpr) {
   if (argExpr.type == 'LiteralExpr' && typeof argExpr.value != 'string') {
     let val = argExpr.value
     console.log(argExpr)
-    il += `%r =w call $puts(l ${val})`
+    main.push(`%r =w call $printf(l $fmt, ..., w ${val})`)
   }
 }
