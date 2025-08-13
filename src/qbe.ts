@@ -10,9 +10,7 @@ function formIL() {
   @start
     ${main.join('\n')}
     ret 0
-  }
-  
-  `
+  }`
 }
 
 export default function compile(stmts: Stmt[]) {
@@ -56,15 +54,46 @@ function callExpression(expression: CallExpr) {
 }
 
 function printFunction(expression: CallExpr) {
-  console.log(expression)
   let argExpr = expression.args[0]!
   if (argExpr.type == 'LiteralExpr') {
     let val = argExpr.value
     if (typeof val == 'string') {
-      data.push(`data $str_1 = { b "${val}", b 0 }`)
-      main.push(`%r =w call $puts(l $str_1)`)
+      let strName = getStringName()
+      let varName = getVarName()
+      data.push(`data $${strName} = { b "${val}", b 0 }`)
+      main.push(`%${varName} =w call $puts(l $${strName})`)
     } else {
-      main.push(`%r =w call $printf(l $fmt, ..., w ${val})`)
+      let varName = getVarName()
+      main.push(`%${varName} =w call $printf(l $fmt, ..., w ${val})`)
     }
   }
+}
+
+// UTILS
+let strCounter = 0
+let varCounter = 0
+
+/**
+ * Generate auto incrementing string names
+ */
+function getStringName(): string {
+  strCounter++
+  return `str_${strCounter}`
+}
+
+/**
+ * Generate unique variable names
+ */
+function getVarName(): string {
+  const alphabet = 'abcdefghijklmnopqrstuvwxyz'
+  let result = ''
+  let num = varCounter
+
+  do {
+    result = alphabet[num % 26] + result
+    num = Math.floor(num / 26)
+  } while (num > 0)
+
+  varCounter++
+  return result
 }
