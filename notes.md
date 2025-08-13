@@ -1,3 +1,5 @@
+the script are very confusinng - should compiling mean only generating the converted file, should it also link - when should the file be executed, should all scripts be in package.json with other places calling them - they are being used in three places at least - in main.ts, tests and in the terminal during development.
+
 set up the tests for qbe, so you track progress
 
 using wasm binary to link the util file resulted in a faster compilation speed over using a wat file

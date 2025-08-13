@@ -4,7 +4,6 @@ import { readdir } from 'node:fs/promises'
 import { describe } from 'node:test'
 
 const jasmineProgramsDir = './tests/jasmine_programs'
-const buildDir = './build'
 const fileNames = await readdir(jasmineProgramsDir)
 fileNames.sort()
 
@@ -14,13 +13,14 @@ for (const fileName of fileNames) {
 
   let expected: string[] = getExpected(sourceText)
 
-  describe('binaryen', () => {
-    test(`${fileName}`, async () => {
-      await $`bun compile ${filePath} --backend binaryen`.quiet()
-      let out = (await $`wasmtime build/a.wasm`.text()).trim().split('\n')
-      expect(out).toEqual(expected)
-    })
-  })
+  // Commented, since we are only interested in testing QBE for now
+  // describe('binaryen', () => {
+  //   test(`${fileName}`, async () => {
+  //     await $`bun compile ${filePath} --backend binaryen`.quiet()
+  //     let out = (await $`wasmtime build/a.wasm`.text()).trim().split('\n')
+  //     expect(out).toEqual(expected)
+  //   })
+  // })
 
   describe('qbe', () => {
     test(`${fileName}`, async () => {

@@ -1,7 +1,9 @@
 import { reportError } from './error'
-import type { BinaryExpr, CallExpr, Expr, LiteralExpr } from './Expr'
+import type { AssignExpr, BinaryExpr, CallExpr, Expr, LiteralExpr, VariableExpr } from './Expr'
 import type { Stmt } from './Stmt'
-import type TokenType from './TokenType'
+import TokenType from './TokenType'
+
+let varTypeMap = new Map()
 
 let main: string[] = []
 let data: string[] = [`data $fmt = { b "%d\\n", b 0 }`]
@@ -34,10 +36,12 @@ function compileStatement(stmt: Stmt) {
       return compileExpression(stmt.expression)
     }
     case 'VariableStmt': {
-      console.log(stmt)
-      // convert this to form: %a = w copy 1
-      // use the actual variable name provided in the ast
-      break
+      let varName = `%${stmt.name.lexeme}`
+      let val = compileExpression(stmt.initializer)
+      let varType = stmt.valueType
+      varTypeMap.set(varName, varType)
+      main.push(`${varName} = w copy ${val}`)
+      return varName
     }
     default:
       console.error(stmt)
@@ -51,6 +55,10 @@ function compileExpression(expression: Expr) {
       return binaryExpression(expression)
     case 'LiteralExpr':
       return literalExpression(expression)
+    case 'VariableExpr':
+      return variableExpression(expression)
+    case 'AssignExpr':
+      return assignExpression(expression)
     case 'CallExpr':
       return callExpression(expression)
     default:
@@ -72,8 +80,8 @@ function binaryExpression(expression: BinaryExpr) {
     SLASH: 'div',
     STAR: 'mul',
   }
-  let varName = getVarName()
-  main.push(`%${varName} =w ${operatorMap[expression.operator.type]} ${left}, ${right}`)
+  let varName = `%${getVarName()}`
+  main.push(`${varName} =w ${operatorMap[expression.operator.type]} ${left}, ${right}`)
   return varName
 }
 
@@ -81,10 +89,27 @@ function literalExpression(expression: LiteralExpr) {
   switch (typeof expression.value) {
     case 'number':
       return expression.value
+    case 'string':
+      let strName = getStringName()
+      let val = expression.value
+      data.push(`data $${strName} = { b "${val}", b 0 }`)
+      return `$${strName}`
     default:
       console.error(expression)
       reportError('Unsupported literal expression.')
   }
+}
+
+function variableExpression(expression: VariableExpr) {
+  return `%${expression.name.lexeme}`
+}
+
+function assignExpression(expression: AssignExpr) {
+  let varName = expression.name.lexeme
+  let val = compileExpression(expression.value)
+
+  main.push(`%${varName} = w copy ${val}`)
+  return varName
 }
 
 function callExpression(expression: CallExpr) {
@@ -101,13 +126,23 @@ function printFunction(expression: CallExpr) {
     if (typeof val == 'string') {
       let strName = getStringName()
       data.push(`data $${strName} = { b "${val}", b 0 }`)
-      main.push(`call $puts(l $${strName})`)
+      main.push(`call $puts(w $${strName})`)
+    } else {
+      main.push(`call $printf(l $fmt, ..., w ${val})`)
+    }
+  } else if (argExpr.type == 'VariableExpr') {
+    let val = compileExpression(argExpr)
+
+    let varType = varTypeMap.get(val)
+    if (varType == TokenType.TYPE_STR) {
+      console.log('here')
+      main.push(`call $puts(w ${val})`)
     } else {
       main.push(`call $printf(l $fmt, ..., w ${val})`)
     }
   } else {
-    let printName = compileExpression(argExpr)
-    main.push(`call $printf(l $fmt, ..., w %${printName})`)
+    let val = compileExpression(argExpr)
+    main.push(`call $printf(l $fmt, ..., w ${val})`)
   }
 }
 
