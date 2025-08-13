@@ -71,16 +71,13 @@ function binaryExpression(expression: BinaryExpr) {
   let left = compileExpression(expression.left)
   let right = compileExpression(expression.right)
 
-  if (typeof left == 'string') left = `%${left}`
-  if (typeof right == 'string') right = `%${right}`
-
   const operatorMap: Partial<Record<TokenType, string>> = {
     PLUS: 'add',
     MINUS: 'sub',
     SLASH: 'div',
     STAR: 'mul',
   }
-  let varName = `%${getVarName()}`
+  let varName = getVarName()
   main.push(`${varName} =w ${operatorMap[expression.operator.type]} ${left}, ${right}`)
   return varName
 }
@@ -172,5 +169,5 @@ function getVarName(): string {
   } while (num > 0)
 
   varCounter++
-  return result
+  return `%${result}`
 }
