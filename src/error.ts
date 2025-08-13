@@ -5,5 +5,5 @@ export function reportError(msg: string, token?: Token): never {
     console.error(`[line ${token.line}] Error at ${token.lexeme}`)
   }
   console.error(msg)
-  process.exit()
+  process.exit(1)
 }
