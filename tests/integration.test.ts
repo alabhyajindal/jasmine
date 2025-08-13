@@ -43,6 +43,9 @@ describe('integration tests', () => {
   }
 })
 
+// Clean up files
+await $`cd build && rm *`
+
 function getExpected(sourceText: string): string[] {
   let lines = sourceText.split('\n')
   let comments = lines.filter((line) => line.substring(0, 2) == '//')
