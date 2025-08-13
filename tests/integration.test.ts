@@ -8,21 +8,28 @@ const buildDir = './build'
 const fileNames = await readdir(jasmineProgramsDir)
 fileNames.sort()
 
-describe('binaryen', () => {
-  for (const fileName of fileNames) {
+for (const fileName of fileNames) {
+  let filePath = jasmineProgramsDir + '/' + fileName
+  let sourceText = await Bun.file(filePath).text()
+
+  let expected: string[] = getExpected(sourceText)
+
+  describe('binaryen', () => {
     test(`${fileName}`, async () => {
-      let filePath = jasmineProgramsDir + '/' + fileName
-      let sourceText = await Bun.file(filePath).text()
-
-      let expected: string[] = getExpected(sourceText)
-
       await $`bun compile ${filePath} --backend binaryen`.quiet()
       let out = (await $`wasmtime build/a.wasm`.text()).trim().split('\n')
-
       expect(out).toEqual(expected)
     })
-  }
-})
+  })
+
+  describe('qbe', () => {
+    test(`${fileName}`, async () => {
+      await $`bun compile ${filePath} --backend qbe`.quiet()
+      let out = (await $`./build/qbe/a.out`.text()).trim().split('\n')
+      expect(out).toEqual(expected)
+    })
+  })
+}
 
 function getExpected(sourceText: string): string[] {
   let lines = sourceText.split('\n')
