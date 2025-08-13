@@ -5,21 +5,20 @@ let main: string[] = []
 let data: string[] = [`data $fmt = { b "%d\\n", b 0 }`]
 
 function formIL() {
-  return `
+  return `${data.join('\n')}
   export function w $main() {
   @start
     ${main.join('\n')}
     ret 0
   }
   
-  ${data}
   `
 }
 
 export default function compile(stmts: Stmt[]) {
   compileStatements(stmts)
   const il = formIL()
-  Bun.write('build/qbe/il.ssa', il)
+  Bun.write('build/qbe/main.ssa', il)
 }
 
 function compileStatements(stmts: Stmt[]) {
@@ -31,8 +30,7 @@ function compileStatements(stmts: Stmt[]) {
 function compileStatement(stmt: Stmt) {
   switch (stmt.type) {
     case 'ExprStmt': {
-      let expr = compileExpression(stmt.expression)
-      break
+      return compileExpression(stmt.expression)
     }
     default:
       console.error(stmt)
@@ -58,10 +56,15 @@ function callExpression(expression: CallExpr) {
 }
 
 function printFunction(expression: CallExpr) {
+  console.log(expression)
   let argExpr = expression.args[0]!
-  if (argExpr.type == 'LiteralExpr' && typeof argExpr.value != 'string') {
+  if (argExpr.type == 'LiteralExpr') {
     let val = argExpr.value
-    console.log(argExpr)
-    main.push(`%r =w call $printf(l $fmt, ..., w ${val})`)
+    if (typeof val == 'string') {
+      data.push(`data $str_1 = { b "${val}", b 0 }`)
+      main.push(`%r =w call $puts(l $str_1)`)
+    } else {
+      main.push(`%r =w call $printf(l $fmt, ..., w ${val})`)
+    }
   }
 }
