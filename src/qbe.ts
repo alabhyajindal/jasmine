@@ -1,5 +1,7 @@
-import type { CallExpr, Expr } from './Expr'
+import { reportError } from './error'
+import type { BinaryExpr, CallExpr, Expr, LiteralExpr } from './Expr'
 import type { Stmt } from './Stmt'
+import type TokenType from './TokenType'
 
 let main: string[] = []
 let data: string[] = [`data $fmt = { b "%d\\n", b 0 }`]
@@ -38,11 +40,43 @@ function compileStatement(stmt: Stmt) {
 
 function compileExpression(expression: Expr) {
   switch (expression.type) {
+    case 'BinaryExpr':
+      return binaryExpression(expression)
+    case 'LiteralExpr':
+      return literalExpression(expression)
     case 'CallExpr':
       return callExpression(expression)
     default:
       console.error(expression)
       reportError('Unsupported expression.')
+  }
+}
+
+function binaryExpression(expression: BinaryExpr) {
+  let left = compileExpression(expression.left)
+  let right = compileExpression(expression.right)
+
+  if (typeof left == 'string') left = `%${left}`
+  if (typeof right == 'string') right = `%${right}`
+
+  const operatorMap: Partial<Record<TokenType, string>> = {
+    PLUS: 'add',
+    MINUS: 'sub',
+    SLASH: 'div',
+    STAR: 'mul',
+  }
+  let varName = getVarName()
+  main.push(`%${varName} =w ${operatorMap[expression.operator.type]} ${left}, ${right}`)
+  return varName
+}
+
+function literalExpression(expression: LiteralExpr) {
+  switch (typeof expression.value) {
+    case 'number':
+      return expression.value
+    default:
+      console.error(expression)
+      reportError('Unsupported literal expression.')
   }
 }
 
@@ -66,6 +100,9 @@ function printFunction(expression: CallExpr) {
       let varName = getVarName()
       main.push(`%${varName} =w call $printf(l $fmt, ..., w ${val})`)
     }
+  } else {
+    let varName = compileExpression(argExpr)
+    main.push(`%${varName} =w call $printf(l $fmt, ..., w %${varName})`)
   }
 }
 
