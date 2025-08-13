@@ -44,11 +44,12 @@ async function run(source: string) {
     const wat = binaryenCompile(statements)
     if (!wat) reportError('Compilation failed.')
     Bun.write('build/main.wat', wat)
-
     await $`wasm-merge build/main.wat main lib/utils.wasm utils -o build/a.wasm --enable-multimemory`
   }
 
   if (backend == 'qbe') {
-    qbeCompile(statements)
+    const il = qbeCompile(statements)
+    Bun.write('build/qbe/main.ssa', il)
+    await $`cd build/qbe/ && qbe -o out.s main.ssa && cc out.s`
   }
 }

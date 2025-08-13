@@ -19,7 +19,7 @@ export function w $main() {
 export default function compile(stmts: Stmt[]) {
   compileStatements(stmts)
   const il = formIL()
-  Bun.write('build/qbe/main.ssa', il)
+  return il
 }
 
 function compileStatements(stmts: Stmt[]) {

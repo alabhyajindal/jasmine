@@ -6,45 +6,23 @@ import { describe } from 'node:test'
 const jasmineProgramsDir = './tests/jasmine_programs'
 const buildDir = './build'
 const fileNames = await readdir(jasmineProgramsDir)
+fileNames.sort()
 
-let entireSource = ''
-let allExpected = []
+describe('binaryen', () => {
+  for (const fileName of fileNames) {
+    test(`${fileName}`, async () => {
+      let filePath = jasmineProgramsDir + '/' + fileName
+      let sourceText = await Bun.file(filePath).text()
 
-for (const fileName of fileNames) {
-  let filePath = jasmineProgramsDir + '/' + fileName
-  let sourceText = await Bun.file(filePath).text()
-  entireSource += sourceText
-  entireSource += '\n\n\n'
+      let expected: string[] = getExpected(sourceText)
 
-  let fileExpected = getExpected(sourceText)
-  let expected = fileExpected.map((e) => ({ fileName, expected: e }))
-  allExpected.push(...expected)
-}
+      await $`bun compile ${filePath} --backend binaryen`.quiet()
+      let out = (await $`wasmtime build/a.wasm`.text()).trim().split('\n')
 
-let sourcePath = buildDir + '/' + 'input.jas'
-Bun.write(sourcePath, entireSource)
-
-// Compile the joined source file
-await $`bun compile ${sourcePath} --backend binaryen`
-// Execute the joined source file with Wasmtime
-let out = (await $`wasmtime build/a.wasm`.text()).trim().split('\n')
-
-describe('integration tests', () => {
-  test('output count matches expectation', () => {
-    expect(out.length).toBe(allExpected.length)
-  })
-
-  for (let [i, ex] of allExpected.entries()) {
-    test(`${ex.fileName}`, () => {
-      let { expected } = ex
-      let output = out[i]
-      expect(output).toBe(expected)
+      expect(out).toEqual(expected)
     })
   }
 })
-
-// Clean up files
-await $`cd build && rm *`
 
 function getExpected(sourceText: string): string[] {
   let lines = sourceText.split('\n')
