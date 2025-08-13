@@ -2,7 +2,7 @@ import { $ } from 'bun'
 import scan from './lexer'
 import parse from './parser'
 import binaryenCompile from './binaryen'
-import compile from './wat'
+import qbeCompile from './qbe'
 // @ts-ignore Do not look for type declarations for the source language
 import source from '../__.jas'
 import { reportError } from './error'
@@ -12,7 +12,7 @@ let _ = source
 const args = Bun.argv.slice(2)
 
 const validCall =
-  args.length == 3 && args[1] == '--backend' && (args[2] == 'binaryen' || args[2] == 'wat')
+  args.length == 3 && args[1] == '--backend' && (args[2] == 'binaryen' || args[2] == 'qbe')
 
 if (!validCall) {
   console.log('Usage: bun compile <file.jas> --backend <binaryen | wat>')
@@ -40,9 +40,15 @@ async function run(source: string) {
   // console.log(JSON.stringify(statements, null, 2))
   // return
 
-  const wat = backend == 'binaryen' ? binaryenCompile(statements) : compile(statements)
-  if (!wat) reportError('Compilation failed.')
-  Bun.write('build/main.wat', wat)
+  if (backend == 'binaryen') {
+    const wat = binaryenCompile(statements)
+    if (!wat) reportError('Compilation failed.')
+    Bun.write('build/main.wat', wat)
 
-  await $`wasm-merge build/main.wat main lib/utils.wasm utils -o build/a.wasm --enable-multimemory`
+    await $`wasm-merge build/main.wat main lib/utils.wasm utils -o build/a.wasm --enable-multimemory`
+  }
+
+  if (backend == 'qbe') {
+    qbeCompile(statements)
+  }
 }

@@ -7,7 +7,7 @@
     "watch": "bun --watch src/main.ts",
     "compile": "bun src/main.ts",
     "binaryen": "bun compile __.jas --backend binaryen && wasmtime build/a.wasm",
-    "wat": "bun compile __.jas --backend wat && wasmtime build/a.wasm"
+    "qbe": "bun compile __.jas --backend qbe"
   },
   "devDependencies": {
     "@types/bun": "latest"
