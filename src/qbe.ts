@@ -8,11 +8,12 @@ let data: string[] = [`data $fmt = { b "%d\\n", b 0 }`]
 
 function formIL() {
   return `${data.join('\n')}
-  export function w $main() {
-  @start
-    ${main.join('\n')}
-    ret 0
-  }`
+
+export function w $main() {
+@start
+  ${main.join('\n  ')}
+  ret 0
+}`
 }
 
 export default function compile(stmts: Stmt[]) {
@@ -31,6 +32,12 @@ function compileStatement(stmt: Stmt) {
   switch (stmt.type) {
     case 'ExprStmt': {
       return compileExpression(stmt.expression)
+    }
+    case 'VariableStmt': {
+      console.log(stmt)
+      // convert this to form: %a = w copy 1
+      // use the actual variable name provided in the ast
+      break
     }
     default:
       console.error(stmt)
@@ -93,16 +100,14 @@ function printFunction(expression: CallExpr) {
     let val = argExpr.value
     if (typeof val == 'string') {
       let strName = getStringName()
-      let varName = getVarName()
       data.push(`data $${strName} = { b "${val}", b 0 }`)
-      main.push(`%${varName} =w call $puts(l $${strName})`)
+      main.push(`call $puts(l $${strName})`)
     } else {
-      let varName = getVarName()
-      main.push(`%${varName} =w call $printf(l $fmt, ..., w ${val})`)
+      main.push(`call $printf(l $fmt, ..., w ${val})`)
     }
   } else {
-    let varName = compileExpression(argExpr)
-    main.push(`%${varName} =w call $printf(l $fmt, ..., w %${varName})`)
+    let printName = compileExpression(argExpr)
+    main.push(`call $printf(l $fmt, ..., w %${printName})`)
   }
 }
 

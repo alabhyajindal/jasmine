@@ -1,3 +1,5 @@
+set up the tests for qbe, so you track progress
+
 using wasm binary to link the util file resulted in a faster compilation speed over using a wat file
 
 following are the time difference the two different commands at the end of the compilation phase. surprisingly the difference is not noticeable when the commands are run in isolation.
