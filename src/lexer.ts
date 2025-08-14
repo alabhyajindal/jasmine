@@ -24,6 +24,7 @@ const types: Record<string, ValueType> = {
   int: TokenType.TYPE_INT,
   nil: TokenType.TYPE_NIL,
   str: TokenType.TYPE_STR,
+  bool: TokenType.TYPE_BOOL,
 }
 
 let start = 0

@@ -42,6 +42,7 @@ enum TokenType {
   TYPE_INT = 'TYPE_INT',
   TYPE_NIL = 'TYPE_NIL',
   TYPE_STR = 'TYPE_STR',
+  TYPE_BOOL = 'TYPE_BOOL',
 
   //   Literals
   IDENTIFER = 'IDENTIFER',
