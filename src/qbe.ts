@@ -128,12 +128,12 @@ function ifStatement(stmt: IfStmt) {
 
     ctx.push(`${thenLabel}`)
     compileStatement(stmt.thenBranch)
-    ctx.push(`jmp ${endLabel}`)
+    if (ctx[ctx.length - 1]?.substring(0, 3) != 'ret') ctx.push(`jmp ${endLabel}`)
 
     if (stmt.elseBranch && elseLabel) {
         ctx.push(`${elseLabel}`)
         compileStatement(stmt.elseBranch)
-        ctx.push(`jmp ${endLabel}`)
+        if (ctx[ctx.length - 1]?.substring(0, 3) != 'ret') ctx.push(`jmp ${endLabel}`)
     }
 
     ctx.push(`${endLabel}`)
