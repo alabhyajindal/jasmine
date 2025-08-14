@@ -10,7 +10,10 @@ let ctx: string[] = []
 let data: string[] = []
 let functions: string[] = []
 
-const ilType: Map<ValueType, any> = new Map([[TokenType.TYPE_INT, 'w']])
+const ilType: Map<ValueType, any> = new Map([
+  [TokenType.TYPE_INT, 'w'],
+  [TokenType.TYPE_NIL, ''],
+])
 
 function formIL() {
   return `${data.join('\n')}
@@ -87,8 +90,9 @@ function compileStatement(stmt: Stmt) {
 }
 
 function fnDeclaration(stmt: FunDecl) {
-  // console.log(JSON.stringify(stmt, null, 2))
   let fnName = stmt.name.lexeme
+
+  beginScope()
   let params = stmt.params.map((p) => {
     let paramName = getVarName()
     declareVariable(p.name, paramName, p.type)
@@ -99,12 +103,15 @@ function fnDeclaration(stmt: FunDecl) {
   let prevCtx = ctx
   ctx = []
   compileStatements(stmt.body.statements)
+  // Add an empty return at the end of the function body if the return type is nil
+  if (returnType == '') ctx.push('ret')
 
   let fn = `function ${returnType} $${fnName}(${params.join(', ')}) {
 @start
   ${ctx.join('\n  ')}
 }`
   functions.push(fn)
+  endScope()
 
   ctx = prevCtx
 }

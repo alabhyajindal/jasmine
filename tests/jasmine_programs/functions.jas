@@ -1,6 +1,6 @@
 // 5
 // 0
-// alabhya
+// John
 // game time!!
 // 100
 
@@ -16,7 +16,7 @@ let res: int = minus_dozen(add(6, 6));
 println(res);
 
 fn print_name() -> nil {
-    println("alabhya");
+    println("John");
 }
 print_name();
 
