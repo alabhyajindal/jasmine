@@ -13,15 +13,6 @@ for (const fileName of fileNames) {
 
   let expected: string[] = getExpected(sourceText)
 
-  // Commented, since we are only interested in testing QBE for now
-  // describe('binaryen', () => {
-  //   test(`${fileName}`, async () => {
-  //     await $`bun compile ${filePath} --backend binaryen`.quiet()
-  //     let out = (await $`wasmtime build/a.wasm`.text()).trim().split('\n')
-  //     expect(out).toEqual(expected)
-  //   })
-  // })
-
   describe('qbe', () => {
     test(`${fileName}`, async () => {
       await $`bun compile ${filePath} --backend qbe`.quiet()
