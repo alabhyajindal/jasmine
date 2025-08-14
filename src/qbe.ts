@@ -77,6 +77,43 @@ function compileStatement(stmt: Stmt) {
       endScope()
       break
     }
+    case 'ForStmt': {
+      let startVal = compileExpression(stmt.start)
+      let endVal = compileExpression(stmt.end)
+
+      // Create unique labels for the loop structure
+      let conditionLabel = getBlockLabel()
+      let bodyLabel = getBlockLabel()
+      let endLabel = getBlockLabel()
+
+      beginScope()
+      let loopVarName = getVarName()
+      declareVariable(stmt.variable, loopVarName, TokenType.TYPE_INT)
+      main.push(`${loopVarName} =w copy ${startVal}`)
+
+      // Jump to condition check
+      main.push(`jmp ${conditionLabel}`)
+
+      // Condition check: continue while loopVar < endVal
+      main.push(`${conditionLabel}`)
+      let condResult = getVarName()
+      main.push(`${condResult} =w csltw ${loopVarName}, ${endVal}`)
+      main.push(`jnz ${condResult}, ${bodyLabel}, ${endLabel}`)
+
+      // Loop body execution
+      main.push(`${bodyLabel}`)
+      compileStatement(stmt.body)
+
+      // Increment loop counter
+      let incrementResult = getVarName()
+      main.push(`${incrementResult} =w add ${loopVarName}, 1`)
+      main.push(`${loopVarName} =w copy ${incrementResult}`)
+      main.push(`jmp ${conditionLabel}`)
+
+      main.push(`${endLabel}`)
+      endScope()
+      break
+    }
     default:
       console.error(stmt)
       reportError('Unsupported statement.')
