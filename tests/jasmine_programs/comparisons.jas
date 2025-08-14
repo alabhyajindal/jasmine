@@ -21,3 +21,43 @@ println(e);
 // 0
 let f: bool = 100 != 100;
 println(f);
+
+// 1
+let g: bool = 10 >= 5;
+println(g);
+
+// 1
+let h: bool = 10 > 5;
+println(h);
+
+// 0
+let i: bool = 5 > 5;
+println(i);
+
+// 0
+let j: bool = 5 < 5;
+println(j);
+
+// 1
+let k: bool = 5 != 10;
+println(k);
+
+// 1
+let l: bool = 5 == 5;
+println(l);
+
+// 0
+let m: bool = 5 <= 4;
+println(m);
+
+// 0
+let n: bool = 5 >= 6;
+println(n);
+
+// 1
+let o: bool = 4 <= 5;
+println(o);
+
+// 1
+let p: bool = 6 >= 5;
+println(p);
