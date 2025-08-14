@@ -124,8 +124,8 @@ function literalExpression(expression: LiteralExpr) {
     case 'string':
       let strName = getStringName()
       let val = expression.value
-      data.push(`data $${strName} = { b "${val}", b 0 }`)
-      return `$${strName}`
+      data.push(`data ${strName} = { b "${val}", b 0 }`)
+      return strName
     case 'boolean':
       return expression.value ? 1 : 0
     default:
@@ -159,8 +159,8 @@ function printFunction(expression: CallExpr) {
     let val = argExpr.value
     if (typeof val == 'string') {
       let strName = getStringName()
-      data.push(`data $${strName} = { b "${val}", b 0 }`)
-      main.push(`call $puts(w $${strName})`)
+      data.push(`data ${strName} = { b "${val}", b 0 }`)
+      main.push(`call $puts(w ${strName})`)
     } else {
       main.push(`call $printf(l $fmt, ..., w ${val})`)
     }
@@ -186,12 +186,11 @@ let varCounter = 0
 let blockCounter = 0
 
 /**
- * Generate auto incrementing string names
+ * Generate unique string names
  */
 function getStringName(): string {
   strCounter++
-  // include dollar as part of the string return
-  return `str_${strCounter}`
+  return `$str_${strCounter}`
 }
 
 /**
