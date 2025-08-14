@@ -1,21 +1,29 @@
 import { reportError } from './error'
 import type { AssignExpr, BinaryExpr, CallExpr, Expr, LiteralExpr, VariableExpr } from './Expr'
-import type { ForStmt, IfStmt, Stmt } from './Stmt'
+import type { ForStmt, FunDecl, IfStmt, Stmt } from './Stmt'
 import TokenType from './TokenType'
+import type { ValueType } from './ValueType'
 
 let scopeStack: Map<string, [string, any]>[] = []
 
-let main: string[] = []
-let data: string[] = [`data $fmt = { b "%d\\n", b 0 }`]
+let ctx: string[] = []
+let data: string[] = []
+let functions: string[] = []
+
+const ilType: Map<ValueType, any> = new Map([[TokenType.TYPE_INT, 'w']])
 
 function formIL() {
   return `${data.join('\n')}
 
+${functions.join('\n')}
+
 export function w $main() {
 @start
-  ${main.join('\n  ')}
+  ${ctx.join('\n  ')}
   ret 0
-}`
+}
+  
+data $fmt = { b "%d\\n", b 0 }`
 }
 
 export default function compile(stmts: Stmt[]) {
@@ -45,7 +53,7 @@ function compileStatement(stmt: Stmt) {
 
       declareVariable(stmt.name.lexeme, varName, varType)
 
-      main.push(`${varName} = w copy ${val}`)
+      ctx.push(`${varName} = w copy ${val}`)
       return varName
     }
     case 'IfStmt': {
@@ -62,10 +70,43 @@ function compileStatement(stmt: Stmt) {
       forStatement(stmt)
       break
     }
+    case 'FunDecl': {
+      fnDeclaration(stmt)
+      break
+    }
+    case 'ReturnStmt': {
+      let val = compileExpression(stmt.value)
+      if (val) ctx.push(`ret ${val}`)
+      else ctx.push('ret')
+      break
+    }
     default:
       console.error(stmt)
       reportError('Unsupported statement.')
   }
+}
+
+function fnDeclaration(stmt: FunDecl) {
+  // console.log(JSON.stringify(stmt, null, 2))
+  let fnName = stmt.name.lexeme
+  let params = stmt.params.map((p) => {
+    let paramName = getVarName()
+    declareVariable(p.name, paramName, p.type)
+    return `${ilType.get(p.type)} ${paramName}`
+  })
+  let returnType = ilType.get(stmt.returnType)
+
+  let prevCtx = ctx
+  ctx = []
+  compileStatements(stmt.body.statements)
+
+  let fn = `function ${returnType} $${fnName}(${params.join(', ')}) {
+@start
+  ${ctx.join('\n  ')}
+}`
+  functions.push(fn)
+
+  ctx = prevCtx
 }
 
 function ifStatement(stmt: IfStmt) {
@@ -76,19 +117,19 @@ function ifStatement(stmt: IfStmt) {
   let endLabel = getBlockLabel()
 
   let falseTarget = elseLabel ? `${elseLabel}` : `${endLabel}`
-  main.push(`jnz ${condition}, ${thenLabel}, ${falseTarget}`)
+  ctx.push(`jnz ${condition}, ${thenLabel}, ${falseTarget}`)
 
-  main.push(`${thenLabel}`)
+  ctx.push(`${thenLabel}`)
   compileStatement(stmt.thenBranch)
-  main.push(`jmp ${endLabel}`)
+  ctx.push(`jmp ${endLabel}`)
 
   if (stmt.elseBranch && elseLabel) {
-    main.push(`${elseLabel}`)
+    ctx.push(`${elseLabel}`)
     compileStatement(stmt.elseBranch)
-    main.push(`jmp ${endLabel}`)
+    ctx.push(`jmp ${endLabel}`)
   }
 
-  main.push(`${endLabel}`)
+  ctx.push(`${endLabel}`)
 }
 
 function forStatement(stmt: ForStmt) {
@@ -103,28 +144,28 @@ function forStatement(stmt: ForStmt) {
   beginScope()
   let loopVarName = getVarName()
   declareVariable(stmt.variable, loopVarName, TokenType.TYPE_INT)
-  main.push(`${loopVarName} =w copy ${startVal}`)
+  ctx.push(`${loopVarName} =w copy ${startVal}`)
 
   // Jump to condition check
-  main.push(`jmp ${conditionLabel}`)
+  ctx.push(`jmp ${conditionLabel}`)
 
   // Condition check: continue while loopVar < endVal
-  main.push(`${conditionLabel}`)
+  ctx.push(`${conditionLabel}`)
   let condResult = getVarName()
-  main.push(`${condResult} =w csltw ${loopVarName}, ${endVal}`)
-  main.push(`jnz ${condResult}, ${bodyLabel}, ${endLabel}`)
+  ctx.push(`${condResult} =w csltw ${loopVarName}, ${endVal}`)
+  ctx.push(`jnz ${condResult}, ${bodyLabel}, ${endLabel}`)
 
   // Loop body execution
-  main.push(`${bodyLabel}`)
+  ctx.push(`${bodyLabel}`)
   compileStatement(stmt.body)
 
   // Increment loop counter
   let incrementResult = getVarName()
-  main.push(`${incrementResult} =w add ${loopVarName}, 1`)
-  main.push(`${loopVarName} =w copy ${incrementResult}`)
-  main.push(`jmp ${conditionLabel}`)
+  ctx.push(`${incrementResult} =w add ${loopVarName}, 1`)
+  ctx.push(`${loopVarName} =w copy ${incrementResult}`)
+  ctx.push(`jmp ${conditionLabel}`)
 
-  main.push(`${endLabel}`)
+  ctx.push(`${endLabel}`)
   endScope()
 }
 
@@ -165,7 +206,7 @@ function binaryExpression(expression: BinaryExpr) {
     BANG_EQUAL: 'cnew',
   }
   let varName = getVarName()
-  main.push(`${varName} =w ${operatorMap[expression.operator.type]} ${left}, ${right}`)
+  ctx.push(`${varName} =w ${operatorMap[expression.operator.type]} ${left}, ${right}`)
   return varName
 }
 
@@ -203,7 +244,7 @@ function assignExpression(expression: AssignExpr) {
   }
 
   let [varName, _] = result
-  main.push(`${varName} =w copy ${val}`)
+  ctx.push(`${varName} =w copy ${val}`)
   return expression.name.lexeme
 }
 
@@ -212,6 +253,13 @@ function callExpression(expression: CallExpr) {
   if (fnName == 'println') {
     return printFunction(expression)
   }
+
+  // Handle user-defined functions
+  let args = expression.args.map((arg) => compileExpression(arg))
+  let resultVar = getVarName()
+  let argList = args.map((arg) => `w ${arg}`).join(', ')
+  ctx.push(`${resultVar} =w call $${fnName}(${argList})`)
+  return resultVar
 }
 
 function printFunction(expression: CallExpr) {
@@ -221,9 +269,9 @@ function printFunction(expression: CallExpr) {
     if (typeof val == 'string') {
       let strName = getStringName()
       data.push(`data ${strName} = { b "${val}", b 0 }`)
-      main.push(`call $puts(w ${strName})`)
+      ctx.push(`call $puts(w ${strName})`)
     } else {
-      main.push(`call $printf(l $fmt, ..., w ${val})`)
+      ctx.push(`call $printf(l $fmt, ..., w ${val})`)
     }
   } else if (argExpr.type == 'VariableExpr') {
     let varName = compileExpression(argExpr)
@@ -232,14 +280,14 @@ function printFunction(expression: CallExpr) {
     if (result) {
       let [_, varType] = result
       if (varType == TokenType.TYPE_STR) {
-        main.push(`call $puts(w ${varName})`)
+        ctx.push(`call $puts(w ${varName})`)
       } else {
-        main.push(`call $printf(l $fmt, ..., w ${varName})`)
+        ctx.push(`call $printf(l $fmt, ..., w ${varName})`)
       }
     }
   } else {
     let val = compileExpression(argExpr)
-    main.push(`call $printf(l $fmt, ..., w ${val})`)
+    ctx.push(`call $printf(l $fmt, ..., w ${val})`)
   }
 }
 
