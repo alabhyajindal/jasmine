@@ -1,27 +1,43 @@
 # Jasmine
 
-Jasmine is a statically-typed programming language that compiles to WebAssembly. It is implemented in TypeScript and utilizes [Binaryen](https://github.com/WebAssembly/binaryen) for code generation.
-
-Here's what it looks like!
+Jasmine is a statically-typed programming language that supports two backends for code generation, [Binaryen](https://github.com/WebAssembly/binaryen) and [QBE](https://c9x.me/compile/). Here's what it looks like!
 
 ```
-fn add(a: int, b: int) -> int {
-    return a + b;
+fn fib(n: int) -> int {
+    if n <= 0 {
+        return 0;
+    } else if n == 1 {
+        return 1;
+    } 
+
+    let a: int = 0;
+    let b: int = 1;
+
+    for i in 1..n {
+        let temp: int = a;
+        a = b;
+        b = temp + b;
+    }
+    
+    return b;
 }
 
-println(add(2, 1));
+println(fib(10));
 ```
 
-## Goals
+## Prerequisites
 
-The project's goal is to get an understanding of the developer experience when targeting WebAssembly. It's part of my dissertation where I'm evaluating if WebAssembly is suitable as a general purpose compilation target.
+1. [Bun](https://bun.com/)
+2. [Wasmtime](https://wasmtime.dev/)
+3. QBE
+
 
 ## Setup
 
-Jasmine uses [Bun](https://bun.sh/) to compile TypeScript. Bun by itself does not provide type checking. You would need an [editor](https://github.com/microsoft/Typescript/wiki/TypeScript-Editor-Support) that supports TypeScript to get around this.
+Jasmine uses Bun to compile TypeScript. Bun by itself does not provide type checking. You would need an [editor](https://github.com/microsoft/Typescript/wiki/TypeScript-Editor-Support) that supports TypeScript to get around this.
 
 ```shell
 git clone git@github.com:alabhyajindal/jasmine.git
 cd jasmine
-bun src/main.ts
+bun install
 ```
