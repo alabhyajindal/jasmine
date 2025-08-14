@@ -80,6 +80,8 @@ function compileExpression(expression: Expr) {
   switch (expression.type) {
     case 'BinaryExpr':
       return binaryExpression(expression)
+    case 'GroupingExpr':
+      return compileExpression(expression.expression)
     case 'LiteralExpr':
       return literalExpression(expression)
     case 'VariableExpr':
