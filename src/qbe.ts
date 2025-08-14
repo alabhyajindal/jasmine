@@ -43,6 +43,33 @@ function compileStatement(stmt: Stmt) {
       main.push(`${varName} = w copy ${val}`)
       return varName
     }
+    case 'IfStmt': {
+      let condition = compileExpression(stmt.condition)
+
+      let thenLabel = getBlockLabel()
+      let elseLabel = stmt.elseBranch ? getBlockLabel() : null
+      let endLabel = getBlockLabel()
+
+      let falseTarget = elseLabel ? `${elseLabel}` : `${endLabel}`
+      main.push(`jnz ${condition}, ${thenLabel}, ${falseTarget}`)
+
+      main.push(`${thenLabel}`)
+      compileStatement(stmt.thenBranch)
+      main.push(`jmp ${endLabel}`)
+
+      if (stmt.elseBranch && elseLabel) {
+        main.push(`${elseLabel}`)
+        compileStatement(stmt.elseBranch)
+        main.push(`jmp ${endLabel}`)
+      }
+
+      main.push(`${endLabel}`)
+      break
+    }
+    case 'BlockStmt': {
+      compileStatements(stmt.statements)
+      break
+    }
     default:
       console.error(stmt)
       reportError('Unsupported statement.')
@@ -91,6 +118,8 @@ function literalExpression(expression: LiteralExpr) {
       let val = expression.value
       data.push(`data $${strName} = { b "${val}", b 0 }`)
       return `$${strName}`
+    case 'boolean':
+      return expression.value ? 1 : 0
     default:
       console.error(expression)
       reportError('Unsupported literal expression.')
@@ -146,12 +175,14 @@ function printFunction(expression: CallExpr) {
 // UTILS
 let strCounter = 0
 let varCounter = 0
+let blockCounter = 0
 
 /**
  * Generate auto incrementing string names
  */
 function getStringName(): string {
   strCounter++
+  // include dollar as part of the string return
   return `str_${strCounter}`
 }
 
@@ -170,4 +201,12 @@ function getVarName(): string {
 
   varCounter++
   return `%${result}`
+}
+
+/**
+ * Generate unique block labels
+ */
+function getBlockLabel(): string {
+  blockCounter++
+  return `@block_${blockCounter}`
 }
