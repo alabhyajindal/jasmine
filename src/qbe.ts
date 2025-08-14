@@ -1,6 +1,6 @@
 import { reportError } from './error'
 import type { AssignExpr, BinaryExpr, CallExpr, Expr, LiteralExpr, VariableExpr } from './Expr'
-import type { Stmt } from './Stmt'
+import type { ForStmt, IfStmt, Stmt } from './Stmt'
 import TokenType from './TokenType'
 
 let scopeStack: Map<string, [string, any]>[] = []
@@ -49,26 +49,7 @@ function compileStatement(stmt: Stmt) {
       return varName
     }
     case 'IfStmt': {
-      let condition = compileExpression(stmt.condition)
-
-      let thenLabel = getBlockLabel()
-      let elseLabel = stmt.elseBranch ? getBlockLabel() : null
-      let endLabel = getBlockLabel()
-
-      let falseTarget = elseLabel ? `${elseLabel}` : `${endLabel}`
-      main.push(`jnz ${condition}, ${thenLabel}, ${falseTarget}`)
-
-      main.push(`${thenLabel}`)
-      compileStatement(stmt.thenBranch)
-      main.push(`jmp ${endLabel}`)
-
-      if (stmt.elseBranch && elseLabel) {
-        main.push(`${elseLabel}`)
-        compileStatement(stmt.elseBranch)
-        main.push(`jmp ${endLabel}`)
-      }
-
-      main.push(`${endLabel}`)
+      ifStatement(stmt)
       break
     }
     case 'BlockStmt': {
@@ -78,46 +59,73 @@ function compileStatement(stmt: Stmt) {
       break
     }
     case 'ForStmt': {
-      let startVal = compileExpression(stmt.start)
-      let endVal = compileExpression(stmt.end)
-
-      // Create unique labels for the loop structure
-      let conditionLabel = getBlockLabel()
-      let bodyLabel = getBlockLabel()
-      let endLabel = getBlockLabel()
-
-      beginScope()
-      let loopVarName = getVarName()
-      declareVariable(stmt.variable, loopVarName, TokenType.TYPE_INT)
-      main.push(`${loopVarName} =w copy ${startVal}`)
-
-      // Jump to condition check
-      main.push(`jmp ${conditionLabel}`)
-
-      // Condition check: continue while loopVar < endVal
-      main.push(`${conditionLabel}`)
-      let condResult = getVarName()
-      main.push(`${condResult} =w csltw ${loopVarName}, ${endVal}`)
-      main.push(`jnz ${condResult}, ${bodyLabel}, ${endLabel}`)
-
-      // Loop body execution
-      main.push(`${bodyLabel}`)
-      compileStatement(stmt.body)
-
-      // Increment loop counter
-      let incrementResult = getVarName()
-      main.push(`${incrementResult} =w add ${loopVarName}, 1`)
-      main.push(`${loopVarName} =w copy ${incrementResult}`)
-      main.push(`jmp ${conditionLabel}`)
-
-      main.push(`${endLabel}`)
-      endScope()
+      forStatement(stmt)
       break
     }
     default:
       console.error(stmt)
       reportError('Unsupported statement.')
   }
+}
+
+function ifStatement(stmt: IfStmt) {
+  let condition = compileExpression(stmt.condition)
+
+  let thenLabel = getBlockLabel()
+  let elseLabel = stmt.elseBranch ? getBlockLabel() : null
+  let endLabel = getBlockLabel()
+
+  let falseTarget = elseLabel ? `${elseLabel}` : `${endLabel}`
+  main.push(`jnz ${condition}, ${thenLabel}, ${falseTarget}`)
+
+  main.push(`${thenLabel}`)
+  compileStatement(stmt.thenBranch)
+  main.push(`jmp ${endLabel}`)
+
+  if (stmt.elseBranch && elseLabel) {
+    main.push(`${elseLabel}`)
+    compileStatement(stmt.elseBranch)
+    main.push(`jmp ${endLabel}`)
+  }
+
+  main.push(`${endLabel}`)
+}
+
+function forStatement(stmt: ForStmt) {
+  let startVal = compileExpression(stmt.start)
+  let endVal = compileExpression(stmt.end)
+
+  // Create unique labels for the loop structure
+  let conditionLabel = getBlockLabel()
+  let bodyLabel = getBlockLabel()
+  let endLabel = getBlockLabel()
+
+  beginScope()
+  let loopVarName = getVarName()
+  declareVariable(stmt.variable, loopVarName, TokenType.TYPE_INT)
+  main.push(`${loopVarName} =w copy ${startVal}`)
+
+  // Jump to condition check
+  main.push(`jmp ${conditionLabel}`)
+
+  // Condition check: continue while loopVar < endVal
+  main.push(`${conditionLabel}`)
+  let condResult = getVarName()
+  main.push(`${condResult} =w csltw ${loopVarName}, ${endVal}`)
+  main.push(`jnz ${condResult}, ${bodyLabel}, ${endLabel}`)
+
+  // Loop body execution
+  main.push(`${bodyLabel}`)
+  compileStatement(stmt.body)
+
+  // Increment loop counter
+  let incrementResult = getVarName()
+  main.push(`${incrementResult} =w add ${loopVarName}, 1`)
+  main.push(`${loopVarName} =w copy ${incrementResult}`)
+  main.push(`jmp ${conditionLabel}`)
+
+  main.push(`${endLabel}`)
+  endScope()
 }
 
 function compileExpression(expression: Expr) {
