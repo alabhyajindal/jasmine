@@ -1,0 +1,23 @@
+// 1
+let a: bool = 5 < 10;
+println(a);
+
+// 1
+let b: bool = 5 <= 5;
+println(b);
+
+// 0
+let c: bool = 5 > 10;
+println(c);
+
+// 0
+let d: bool = 5 >= 10;
+println(d);
+
+// 1
+let e: bool = 100 == 100;
+println(e);
+
+// 0
+let f: bool = 100 != 100;
+println(f);

@@ -103,6 +103,12 @@ function binaryExpression(expression: BinaryExpr) {
     MINUS: 'sub',
     SLASH: 'div',
     STAR: 'mul',
+    LESS: 'csltw',
+    LESS_EQUAL: 'cslew',
+    GREATER: 'csgtw',
+    GREATER_EQUAL: 'csgew',
+    EQUAL_EQUAL: 'ceqw',
+    BANG_EQUAL: 'cnew',
   }
   let varName = getVarName()
   main.push(`${varName} =w ${operatorMap[expression.operator.type]} ${left}, ${right}`)
@@ -134,7 +140,7 @@ function assignExpression(expression: AssignExpr) {
   let varName = expression.name.lexeme
   let val = compileExpression(expression.value)
 
-  main.push(`%${varName} = w copy ${val}`)
+  main.push(`%${varName} =w copy ${val}`)
   return varName
 }
 
