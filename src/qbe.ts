@@ -3,7 +3,7 @@ import type { AssignExpr, BinaryExpr, CallExpr, Expr, LiteralExpr, VariableExpr 
 import type { Stmt } from './Stmt'
 import TokenType from './TokenType'
 
-let varTypeMap = new Map()
+let scopeStack: Map<string, [string, any]>[] = []
 
 let main: string[] = []
 let data: string[] = [`data $fmt = { b "%d\\n", b 0 }`]
@@ -19,8 +19,11 @@ export function w $main() {
 }
 
 export default function compile(stmts: Stmt[]) {
+  beginScope()
   compileStatements(stmts)
   const il = formIL()
+  endScope()
+
   return il
 }
 
@@ -36,10 +39,12 @@ function compileStatement(stmt: Stmt) {
       return compileExpression(stmt.expression)
     }
     case 'VariableStmt': {
-      let varName = `%${stmt.name.lexeme}`
+      let varName = getVarName()
       let val = compileExpression(stmt.initializer)
       let varType = stmt.valueType
-      varTypeMap.set(varName, varType)
+
+      declareVariable(stmt.name.lexeme, varName, varType)
+
       main.push(`${varName} = w copy ${val}`)
       return varName
     }
@@ -67,7 +72,9 @@ function compileStatement(stmt: Stmt) {
       break
     }
     case 'BlockStmt': {
+      beginScope()
       compileStatements(stmt.statements)
+      endScope()
       break
     }
     default:
@@ -135,15 +142,24 @@ function literalExpression(expression: LiteralExpr) {
 }
 
 function variableExpression(expression: VariableExpr) {
-  return `%${expression.name.lexeme}`
+  const result = lookupVariable(expression.name.lexeme)
+  if (!result) {
+    reportError(`Undefined variable: ${expression.name.lexeme}`)
+  }
+  return result[0]
 }
 
 function assignExpression(expression: AssignExpr) {
-  let varName = expression.name.lexeme
   let val = compileExpression(expression.value)
 
-  main.push(`%${varName} =w copy ${val}`)
-  return varName
+  let result = lookupVariable(expression.name.lexeme)
+  if (!result) {
+    reportError(`Undefined variable: ${expression.name.lexeme}`)
+  }
+
+  let [varName, _] = result
+  main.push(`${varName} =w copy ${val}`)
+  return expression.name.lexeme
 }
 
 function callExpression(expression: CallExpr) {
@@ -165,14 +181,16 @@ function printFunction(expression: CallExpr) {
       main.push(`call $printf(l $fmt, ..., w ${val})`)
     }
   } else if (argExpr.type == 'VariableExpr') {
-    let val = compileExpression(argExpr)
+    let varName = compileExpression(argExpr)
 
-    let varType = varTypeMap.get(val)
-    if (varType == TokenType.TYPE_STR) {
-      console.log('here')
-      main.push(`call $puts(w ${val})`)
-    } else {
-      main.push(`call $printf(l $fmt, ..., w ${val})`)
+    let result = lookupVariable(argExpr.name.lexeme)
+    if (result) {
+      let [_, varType] = result
+      if (varType == TokenType.TYPE_STR) {
+        main.push(`call $puts(w ${varName})`)
+      } else {
+        main.push(`call $printf(l $fmt, ..., w ${varName})`)
+      }
     }
   } else {
     let val = compileExpression(argExpr)
@@ -180,7 +198,33 @@ function printFunction(expression: CallExpr) {
   }
 }
 
-// UTILS
+// Scope
+function beginScope() {
+  scopeStack.push(new Map())
+}
+
+function endScope() {
+  scopeStack.pop()
+}
+
+function declareVariable(name: string, ilName: string, type: any) {
+  const currentScope = scopeStack[scopeStack.length - 1]
+  // Current scope will always exist since we create the topmost scope in `compile`
+  currentScope!.set(name, [ilName, type])
+}
+
+function lookupVariable(name: string): [string, any] | null {
+  // Search from innermost to outermost scope
+  for (let i = scopeStack.length - 1; i >= 0; i--) {
+    const scope = scopeStack[i]!
+    if (scope.has(name)) {
+      return scope.get(name)!
+    }
+  }
+  return null
+}
+
+// Utils
 let strCounter = 0
 let varCounter = 0
 let blockCounter = 0
