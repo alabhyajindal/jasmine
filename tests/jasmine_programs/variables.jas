@@ -1,0 +1,108 @@
+// 42
+let a: int = 42;
+println(a);
+
+// 3
+let b: int = 1 + 2;
+println(b);
+
+// John Doe
+let name: str = "John Doe";
+println(name);
+
+// 10
+let x: int = 10;
+println(x);
+
+// 20
+x = 20;
+println(x);
+
+// 30
+let y: int = x + 10;
+println(y);
+
+// 50
+y = y + 20;
+println(y);
+
+// hello
+let s1: str = "hello";
+println(s1);
+
+// world
+s1 = "world";
+println(s1);
+
+// 1
+let bool_val: bool = true;
+println(bool_val);
+
+// 0
+bool_val = 10 < 5;
+println(bool_val);
+
+// 10
+let z: int = 5;
+z = z + 5;
+println(z);
+
+// 15
+z = z + 5;
+println(z);
+
+// 1
+let result: int = 100 / 10 / 10;
+println(result);
+
+// 100
+result = 10 * 10;
+println(result);
+
+// test string
+let str_var: str = "test string";
+println(str_var);
+
+// another string
+str_var = "another string";
+println(str_var);
+
+// 100
+let var_y: int = 100;
+println(var_y);
+
+// 200
+var_y = 200;
+println(var_y);
+
+// London
+let capital: str = "London";
+println(capital);
+
+// Paris
+capital = "Paris";
+println(capital);
+
+// Bristol
+let city: str = "Bristol";
+println(city);
+
+// Manchester
+city = "Manchester";
+println(city);
+
+// 10
+let var_a: int = 10;
+println(var_a);
+
+// 20
+var_a = var_a + 10;
+println(var_a);
+
+// 50
+var_a = var_a + 30;
+println(var_a);
+
+// 100
+var_a = var_a * 2;
+println(var_a);
