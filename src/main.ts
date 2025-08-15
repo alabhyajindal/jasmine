@@ -49,7 +49,7 @@ async function run(source: string) {
 
     if (backend == 'qbe') {
         const il = qbeCompile(statements)
-        Bun.write('build/qbe/main.ssa', il)
-        await $`cd build/qbe/ && qbe -o out.s main.ssa && cc out.s`
+        Bun.write('build/qbe/il.ssa', il)
+        await $`cd build/qbe/ && qbe -o out.s il.ssa && cc out.s`
     }
 }
