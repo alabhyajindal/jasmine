@@ -106,3 +106,9 @@ println(var_a);
 // 100
 var_a = var_a * 2;
 println(var_a);
+
+// 1
+println(true);
+
+// 0
+println(false);
