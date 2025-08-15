@@ -278,6 +278,7 @@ function printFunction(expression: CallExpr) {
             data.push(`data ${strName} = { b "${val}", b 0 }`)
             ctx.push(`call $puts(w ${strName})`)
         } else {
+            if (typeof val == 'boolean') val = val ? 1 : 0
             ctx.push(`call $printf(l $fmt, ..., w ${val})`)
         }
     } else if (argExpr.type == 'VariableExpr') {
