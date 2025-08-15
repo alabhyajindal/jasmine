@@ -37,5 +37,5 @@ report.[0-9]_.[0-9]_.[0-9]_.[0-9]_.json
 *.html
 
 build/
-__.jas
+main.jas
 notes.md

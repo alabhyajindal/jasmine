@@ -4,7 +4,7 @@ import parse from './parser'
 import binaryenCompile from './binaryen'
 import qbeCompile from './qbe'
 // @ts-ignore Do not look for type declarations for the source language
-import source from '../__.jas'
+import source from '../main.jas'
 import { reportError } from './error'
 
 let _ = source
@@ -15,7 +15,7 @@ const validCall =
     args.length == 3 && args[1] == '--backend' && (args[2] == 'binaryen' || args[2] == 'qbe')
 
 if (!validCall) {
-    console.log('Usage: bun compile <file.jas> --backend <binaryen | wat>')
+    console.log('Usage: bun compile <file.jas> --backend <binaryen | qbe>')
     process.exit()
 }
 
