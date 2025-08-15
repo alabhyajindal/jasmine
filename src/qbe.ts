@@ -56,7 +56,7 @@ function compileStatement(stmt: Stmt) {
 
             declareVariable(stmt.name.lexeme, varName, varType)
 
-            ctx.push(`${varName} = w copy ${val}`)
+            ctx.push(`${varName} =w copy ${val}`)
             return varName
         }
         case 'IfStmt': {
