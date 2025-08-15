@@ -43,8 +43,8 @@ async function run(source: string) {
     if (backend == 'binaryen') {
         const wat = binaryenCompile(statements)
         if (!wat) reportError('Compilation failed.')
-        Bun.write('build/main.wat', wat)
-        await $`wasm-merge build/main.wat main lib/utils.wasm utils -o build/a.wasm --enable-multimemory`
+        Bun.write('build/wasm/main.wat', wat)
+        await $`cd build/wasm && wasm-merge main.wat main ../../lib/utils.wasm utils -o a.wasm --enable-multimemory`
     }
 
     if (backend == 'qbe') {

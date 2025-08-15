@@ -16,7 +16,7 @@ for (const fileName of fileNames) {
     describe('binaryen', () => {
         test(`${fileName}`, async () => {
             await $`bun compile ${filePath} --backend binaryen`.quiet()
-            let out = (await $`wasmtime build/a.wasm`.text()).trim().split('\n')
+            let out = (await $`wasmtime build/wasm/a.wasm`.text()).trim().split('\n')
             expect(out).toEqual(expected)
         })
     })
