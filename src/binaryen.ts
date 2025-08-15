@@ -45,7 +45,7 @@ export default function compile(stmt: Stmt[]) {
 
     mod.addFunctionImport(
         'itoa',
-        'utils',
+        'itoa',
         'itoa',
         binaryen.createType([binaryen.i32, binaryen.i32]),
         binaryen.i32
