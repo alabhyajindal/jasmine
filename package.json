@@ -16,7 +16,7 @@
         "binaryen": "bun compile:binaryen && bun run:binaryen",
         "compile:qbe": "bun src/main.ts main.jas --backend qbe",
         "run:qbe": "cd build/qbe && ./a.out",
-        "qbe": "compile:qbe && run:qbe",
+        "qbe": "bun compile:qbe && bun run:qbe",
         "il": "cd build/qbe && qbe -o out.s il.ssa && cc out.s && ./a.out"
     },
     "devDependencies": {
