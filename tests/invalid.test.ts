@@ -18,9 +18,11 @@ for (const fileName of fileNames) {
 
     describe('invalid', () => {
         test(`${fileName}`, async () => {
+            // Calling internal function to generate coverage
             const sourceText = await Bun.file(filePath).text()
             await compile(sourceText, 'qbe')
 
+            // Calling it again from the shell to read the shell standard output
             let out = (await $`TESTING=true bun src/main.ts ${filePath} --backend qbe`.text())
                 .trim()
                 .split('\n')
