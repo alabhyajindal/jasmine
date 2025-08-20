@@ -3,42 +3,11 @@ import scan from './lexer'
 import parse from './parser'
 import binaryenCompile from './binaryen'
 import qbeCompile from './qbe'
-// @ts-ignore Do not look for type declarations for the source language
-import source from '../main.jas'
 import { reportError } from './error'
 
-let _ = source
-
-const args = Bun.argv.slice(2)
-
-const validCall =
-    args.length == 3 && args[1] == '--backend' && (args[2] == 'binaryen' || args[2] == 'qbe')
-
-if (!validCall) {
-    console.log('Usage: bun compile <file.jas> --backend <binaryen | qbe>')
-    process.exit()
-}
-
-const filePath = args[0]!
-const backend = args[2]!
-
-const sourceFile = Bun.file(filePath)
-if (!(await sourceFile.exists())) {
-    console.log(`File not found: ${filePath}.`)
-    process.exit()
-}
-
-const sourceText = await sourceFile.text()
-run(sourceText)
-
-async function run(source: string) {
-    const tokens = scan(source)
-    // console.log(tokens)
-    // return
-
+export async function compile(sourceText: string, backend: string) {
+    const tokens = scan(sourceText)
     const statements = parse(tokens)
-    // console.log(JSON.stringify(statements, null, 2))
-    // return
 
     if (backend == 'binaryen') {
         const wat = binaryenCompile(statements)
@@ -53,3 +22,34 @@ async function run(source: string) {
         await $`cd build/qbe/ && qbe -o out.s il.ssa && cc out.s`
     }
 }
+
+async function main() {
+    const args = Bun.argv.slice(2)
+
+    const validCall =
+        args.length == 3 && args[1] == '--backend' && (args[2] == 'binaryen' || args[2] == 'qbe')
+
+    if (!validCall) {
+        console.log('Usage: bun compile <file.jas> --backend <binaryen | qbe>')
+        process.exit()
+    }
+
+    const filePath = args[0]!
+    const backend = args[2]!
+
+    const sourceFile = Bun.file(filePath)
+    if (!(await sourceFile.exists())) {
+        console.log(`File not found: ${filePath}.`)
+        process.exit()
+    }
+
+    const sourceText = await sourceFile.text()
+    compile(sourceText, backend)
+}
+
+main()
+
+// let filePath = './tests/valid_programs/fibonacci.jas'
+
+// const sourceText = await Bun.file(filePath).text()
+// compile(sourceText, 'binaryen')
