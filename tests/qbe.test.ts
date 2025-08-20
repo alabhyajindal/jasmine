@@ -17,7 +17,7 @@ for (const fileName of fileNames) {
 
     describe('qbe', () => {
         test(`${fileName}`, async () => {
-            await $`bun src/main.ts ${filePath} --backend qbe`.quiet()
+            await $`TESTING=true bun src/main.ts ${filePath} --backend qbe`.quiet()
             const sourceText = await Bun.file(filePath).text()
             await compile(sourceText, 'qbe')
             let out = (await $`bun run:qbe`.text()).trim().split('\n')
