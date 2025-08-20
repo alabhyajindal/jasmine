@@ -208,24 +208,14 @@ export default class Parser {
     }
 
     factor(): Expr {
-        let expr: Expr = this.unary()
+        let expr: Expr = this.call()
         while (this.match(TokenType.SLASH, TokenType.STAR)) {
             let operator = this.previous()
-            let right = this.unary()
+            let right = this.call()
             expr = { left: expr, operator, right, type: 'BinaryExpr' }
         }
 
         return expr
-    }
-
-    unary(): Expr {
-        if (this.match(TokenType.BANG, TokenType.MINUS)) {
-            let operator = this.previous()
-            let right = this.unary()
-            return { operator, right, type: 'UnaryExpr' }
-        }
-
-        return this.call()
     }
 
     call(): Expr {

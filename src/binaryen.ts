@@ -240,8 +240,6 @@ export default class BinaryenCompiler {
             }
             case 'GroupingExpr':
                 return this.compileExpression(expression.expression)
-            case 'UnaryExpr':
-                return this.unaryExpression(expression)
             case 'CallExpr':
                 return this.callExpression(expression)
             case 'AssignExpr':
@@ -322,18 +320,6 @@ export default class BinaryenCompiler {
             default:
                 console.error(expression)
                 reportError('Unsupported literal expression.')
-        }
-    }
-
-    unaryExpression(expression: UnaryExpr): binaryen.ExpressionRef {
-        switch (expression.operator.type) {
-            case TokenType.MINUS: {
-                let expr = this.compileExpression(expression.right)
-                return this.mod.i32.sub(this.mod.i32.const(0), expr)
-            }
-            default:
-                console.error(expression.operator)
-                reportError(`Unsupported binary operator.`)
         }
     }
 

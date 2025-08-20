@@ -7,7 +7,6 @@ import { getExpected } from '../utils'
 const programsDir = './tests/invalid_programs'
 const fileNames = await readdir(programsDir)
 fileNames.sort()
-process.env.IN_TEST = 'true'
 
 for (const fileName of fileNames) {
     let filePath = programsDir + '/' + fileName
