@@ -3,8 +3,6 @@ import TokenType from './TokenType'
 import type { ValueType } from './ValueType'
 import { reportError } from './error'
 
-// TODO: rename file to lexer
-
 const keywords: Record<string, TokenType> = {
     and: TokenType.AND,
     else: TokenType.ELSE,
@@ -27,180 +25,194 @@ const types: Record<string, ValueType> = {
     bool: TokenType.TYPE_BOOL,
 }
 
-let start = 0
-let current = 0
-let line = 1
-let tokens: Token[] = []
-let source = ''
+export default class Lexer {
+    start = 0
+    current = 0
+    line = 1
+    tokens: Token[] = []
+    source = ''
 
-export default function scan(sourceText: string) {
-    source = sourceText
+    scan(sourceText: string) {
+        this.source = sourceText
 
-    while (!isAtEnd()) {
-        start = current
-        scanToken()
+        while (!this.isAtEnd()) {
+            this.start = this.current
+            this.scanToken()
+        }
+
+        this.tokens.push({ type: TokenType.EOF, lexeme: '', literal: null, line: this.line })
+        return this.tokens
     }
 
-    tokens.push({ type: TokenType.EOF, lexeme: '', literal: null, line })
-    return tokens
-}
-
-function scanToken() {
-    let c = advance()
-    switch (c) {
-        case '(':
-            addToken(TokenType.LEFT_PAREN)
-            break
-        case ')':
-            addToken(TokenType.RIGHT_PAREN)
-            break
-        case '{':
-            addToken(TokenType.LEFT_BRACE)
-            break
-        case '}':
-            addToken(TokenType.RIGHT_BRACE)
-            break
-        case ';':
-            addToken(TokenType.SEMICOLON)
-            break
-        case ':':
-            addToken(TokenType.COLON)
-            break
-        case ',':
-            addToken(TokenType.COMMA)
-            break
-        case '.':
-            match('.') ? addToken(TokenType.RANGE) : addToken(TokenType.DOT)
-            break
-        case '-':
-            match('>') ? addToken(TokenType.ARROW) : addToken(TokenType.MINUS)
-            break
-        case '+':
-            addToken(TokenType.PLUS)
-            break
-        case '*':
-            addToken(TokenType.STAR)
-            break
-        case '/':
-            if (match('/')) {
-                while (peek() != '\n' && !isAtEnd()) {
-                    advance()
+    scanToken() {
+        let c = this.advance()
+        switch (c) {
+            case '(':
+                this.addToken(TokenType.LEFT_PAREN)
+                break
+            case ')':
+                this.addToken(TokenType.RIGHT_PAREN)
+                break
+            case '{':
+                this.addToken(TokenType.LEFT_BRACE)
+                break
+            case '}':
+                this.addToken(TokenType.RIGHT_BRACE)
+                break
+            case ';':
+                this.addToken(TokenType.SEMICOLON)
+                break
+            case ':':
+                this.addToken(TokenType.COLON)
+                break
+            case ',':
+                this.addToken(TokenType.COMMA)
+                break
+            case '.':
+                this.match('.') ? this.addToken(TokenType.RANGE) : this.addToken(TokenType.DOT)
+                break
+            case '-':
+                this.match('>') ? this.addToken(TokenType.ARROW) : this.addToken(TokenType.MINUS)
+                break
+            case '+':
+                this.addToken(TokenType.PLUS)
+                break
+            case '*':
+                this.addToken(TokenType.STAR)
+                break
+            case '/':
+                if (this.match('/')) {
+                    while (this.peek() != '\n' && !this.isAtEnd()) {
+                        this.advance()
+                    }
+                } else {
+                    this.addToken(TokenType.SLASH)
                 }
-            } else {
-                addToken(TokenType.SLASH)
-            }
-            break
-        case '!':
-            match('=') ? addToken(TokenType.BANG_EQUAL) : addToken(TokenType.BANG)
-            break
-        case '=':
-            match('=') ? addToken(TokenType.EQUAL_EQUAL) : addToken(TokenType.EQUAL)
-            break
-        case '<':
-            match('=') ? addToken(TokenType.LESS_EQUAL) : addToken(TokenType.LESS)
-            break
-        case '>':
-            match('=') ? addToken(TokenType.GREATER_EQUAL) : addToken(TokenType.GREATER)
-            break
-        case ' ':
-        case '\r':
-        case '\t':
-            break
-        case '\n':
-            line++
-            break
-        case '"':
-            string()
-            break
-        default:
-            if (isDigit(c)) {
-                number()
-                // Identifiers must begin with a character
-            } else if (isAlpha(c)) {
-                identifier()
-            } else {
-                console.error(c)
-                reportError(`Invalid character ${peek()}.`)
-            }
-    }
-}
-
-function isAtEnd() {
-    return current >= source.length
-}
-
-function advance() {
-    current++
-    return source[current - 1]!
-}
-
-function addToken(type: TokenType, literal: Token['literal'] = null) {
-    let lexeme = source.substring(start, current)
-    tokens.push({ type, lexeme, literal, line } as Token)
-}
-
-function match(expected: string) {
-    if (isAtEnd()) {
-        return false
-    }
-    if (source[current] != expected) {
-        return false
+                break
+            case '!':
+                this.match('=')
+                    ? this.addToken(TokenType.BANG_EQUAL)
+                    : this.addToken(TokenType.BANG)
+                break
+            case '=':
+                this.match('=')
+                    ? this.addToken(TokenType.EQUAL_EQUAL)
+                    : this.addToken(TokenType.EQUAL)
+                break
+            case '<':
+                this.match('=')
+                    ? this.addToken(TokenType.LESS_EQUAL)
+                    : this.addToken(TokenType.LESS)
+                break
+            case '>':
+                this.match('=')
+                    ? this.addToken(TokenType.GREATER_EQUAL)
+                    : this.addToken(TokenType.GREATER)
+                break
+            case ' ':
+            case '\r':
+            case '\t':
+                break
+            case '\n':
+                this.line++
+                break
+            case '"':
+                this.string()
+                break
+            default:
+                if (this.isDigit(c)) {
+                    this.number()
+                    // Identifiers must begin with a character
+                } else if (this.isAlpha(c)) {
+                    this.identifier()
+                } else {
+                    console.error(c)
+                    reportError(`Invalid character ${this.peek()}.`)
+                }
+        }
     }
 
-    current++
-    return true
-}
-
-function peek() {
-    if (isAtEnd()) {
-        return '\0'
-    }
-    return source[current]!
-}
-
-function number() {
-    while (isDigit(peek())) {
-        advance()
+    isAtEnd() {
+        return this.current >= this.source.length
     }
 
-    let value = Number.parseInt(source.substring(start, current))
-    addToken(TokenType.INTEGER, value)
-}
-
-function string() {
-    while (peek() != '"') {
-        advance()
+    advance() {
+        this.current++
+        return this.source[this.current - 1]!
     }
 
-    if (isAtEnd()) {
-        reportError('Unterminated string.')
+    addToken(type: TokenType, literal: Token['literal'] = null) {
+        let lexeme = this.source.substring(this.start, this.current)
+        this.tokens.push({ type, lexeme, literal, line: this.line } as Token)
     }
 
-    advance()
-    let value = source.substring(start + 1, current - 1)
-    addToken(TokenType.STRING, value)
-}
+    match(expected: string) {
+        if (this.isAtEnd()) {
+            return false
+        }
+        if (this.source[this.current] != expected) {
+            return false
+        }
 
-// Handles keywords, types and identifiers
-function identifier() {
-    while (isUnderscore(peek()) || isAlpha(peek()) || isDigit(peek())) {
-        advance()
+        this.current++
+        return true
     }
 
-    let text = source.substring(start, current)
-    let type = keywords[text] || types[text] || TokenType.IDENTIFER
+    peek() {
+        if (this.isAtEnd()) {
+            return '\0'
+        }
+        return this.source[this.current]!
+    }
 
-    addToken(type)
-}
+    number() {
+        while (this.isDigit(this.peek())) {
+            this.advance()
+        }
 
-function isDigit(char: string) {
-    return /\d/.test(char)
-}
+        let value = Number.parseInt(this.source.substring(this.start, this.current))
+        this.addToken(TokenType.INTEGER, value)
+    }
 
-function isAlpha(char: string) {
-    return /[A-Z]|[a-z]/.test(char)
-}
+    string() {
+        while (this.peek() != '"') {
+            this.advance()
+        }
 
-function isUnderscore(char: string) {
-    return /\_/.test(char)
+        if (this.isAtEnd()) {
+            reportError('Unterminated string.')
+        }
+
+        this.advance()
+        let value = this.source.substring(this.start + 1, this.current - 1)
+        this.addToken(TokenType.STRING, value)
+    }
+
+    // Handles keywords, types and identifiers
+    identifier() {
+        while (
+            this.isUnderscore(this.peek()) ||
+            this.isAlpha(this.peek()) ||
+            this.isDigit(this.peek())
+        ) {
+            this.advance()
+        }
+
+        let text = this.source.substring(this.start, this.current)
+        let type = keywords[text] || types[text] || TokenType.IDENTIFER
+
+        this.addToken(type)
+    }
+
+    isDigit(char: string) {
+        return /\d/.test(char)
+    }
+
+    isAlpha(char: string) {
+        return /[A-Z]|[a-z]/.test(char)
+    }
+
+    isUnderscore(char: string) {
+        return /\_/.test(char)
+    }
 }

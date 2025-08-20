@@ -4,9 +4,10 @@ import parse from './parser'
 import binaryenCompile from './binaryen'
 import qbeCompile from './qbe'
 import { reportError } from './error'
+import Lexer from './lexer'
 
 export async function compile(sourceText: string, backend: string) {
-    const tokens = scan(sourceText)
+    const tokens = new Lexer().scan(sourceText)
     const statements = parse(tokens)
 
     if (backend == 'binaryen') {
