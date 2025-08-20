@@ -1,27 +1,4 @@
-import { $ } from 'bun'
-import binaryenCompile from './binaryen'
-import qbeCompile from './qbe'
-import { reportError } from './error'
-import Lexer from './lexer'
-import Parser from './parser'
-
-export async function compile(sourceText: string, backend: string) {
-    const tokens = new Lexer().scan(sourceText)
-    const statements = new Parser().parse(tokens)
-
-    if (backend == 'binaryen') {
-        const wat = binaryenCompile(statements)
-        if (!wat) reportError('Compilation failed.')
-        Bun.write('build/wasm/main.wat', wat)
-        await $`cd build/wasm && wasm-merge main.wat main ../../lib/itoa.wat itoa -o a.wasm --enable-multimemory`
-    }
-
-    if (backend == 'qbe') {
-        const il = qbeCompile(statements)
-        Bun.write('build/qbe/il.ssa', il)
-        await $`cd build/qbe/ && qbe -o out.s il.ssa && cc out.s`
-    }
-}
+import { compile } from './compile'
 
 async function main() {
     const args = Bun.argv.slice(2)
@@ -48,8 +25,3 @@ async function main() {
 }
 
 main()
-
-// let filePath = './tests/valid_programs/fibonacci.jas'
-
-// const sourceText = await Bun.file(filePath).text()
-// compile(sourceText, 'binaryen')

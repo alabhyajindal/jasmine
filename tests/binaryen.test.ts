@@ -3,6 +3,7 @@ import { expect, test } from 'bun:test'
 import { readdir } from 'node:fs/promises'
 import { describe } from 'node:test'
 import { getExpected } from '../utils'
+import { compile } from '../src/compile'
 
 const programsDir = './tests/valid_programs'
 const fileNames = await readdir(programsDir)
@@ -16,7 +17,8 @@ for (const fileName of fileNames) {
 
     describe('binaryen', () => {
         test(`${fileName}`, async () => {
-            await $`bun src/main.ts ${filePath} --backend binaryen`.quiet()
+            const sourceText = await Bun.file(filePath).text()
+            await compile(sourceText, 'binaryen')
             let out = (await $`bun run:binaryen`.text()).trim().split('\n')
             expect(out).toEqual(expected)
         })
