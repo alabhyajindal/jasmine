@@ -1,9 +1,9 @@
 import { $ } from 'bun'
+import { reportError } from './error'
 import Lexer from './lexer'
 import Parser from './parser'
 import BinaryenCompiler from './binaryen'
-import qbeCompile from './qbe'
-import { reportError } from './error'
+import QBECompiler from './qbe'
 
 export async function compile(sourceText: string, backend: string) {
     const tokens = new Lexer().scan(sourceText)
@@ -17,7 +17,7 @@ export async function compile(sourceText: string, backend: string) {
     }
 
     if (backend == 'qbe') {
-        const il = qbeCompile(statements)
+        const il = new QBECompiler().compile(statements)
         Bun.write('build/qbe/il.ssa', il)
         await $`cd build/qbe/ && qbe -o out.s il.ssa && cc out.s`
     }
