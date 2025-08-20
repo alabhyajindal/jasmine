@@ -1,0 +1,3 @@
+// Expect ')' after arguments.
+
+println(42;

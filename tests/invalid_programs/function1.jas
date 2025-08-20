@@ -1,0 +1,3 @@
+// Expect function name.
+
+fn () -> i32 { return 42; }

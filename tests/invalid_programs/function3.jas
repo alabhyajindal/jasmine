@@ -1,0 +1,3 @@
+// Expect parameter name.
+
+fn test(, x: i32) -> i32 { return 42; }

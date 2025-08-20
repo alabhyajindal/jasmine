@@ -1,0 +1,3 @@
+// Expect in after for variable.
+
+for i 1..10 { println(i); }

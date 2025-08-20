@@ -1,3 +1,0 @@
-// Expect semicolon after expression.
-
-println("nice")
