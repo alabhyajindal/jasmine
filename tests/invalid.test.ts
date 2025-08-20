@@ -15,7 +15,7 @@ for (const fileName of fileNames) {
 
     let expected: string[] = getExpected(sourceText)
 
-    describe('qbe', () => {
+    describe('invalid', () => {
         test(`${fileName}`, async () => {
             let out = (await $`TESTING=true bun src/main.ts ${filePath} --backend qbe`.text())
                 .trim()

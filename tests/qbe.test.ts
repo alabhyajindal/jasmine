@@ -4,12 +4,12 @@ import { readdir } from 'node:fs/promises'
 import { describe } from 'node:test'
 import { getExpected } from '../utils'
 
-const jasmineProgramsDir = './tests/jasmine_programs'
-const fileNames = await readdir(jasmineProgramsDir)
+const programsDir = './tests/valid_programs'
+const fileNames = await readdir(programsDir)
 fileNames.sort()
 
 for (const fileName of fileNames) {
-    let filePath = jasmineProgramsDir + '/' + fileName
+    let filePath = programsDir + '/' + fileName
     let sourceText = await Bun.file(filePath).text()
 
     let expected: string[] = getExpected(sourceText)
