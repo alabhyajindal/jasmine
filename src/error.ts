@@ -7,6 +7,6 @@ export function reportError(msg: string, token?: Token): never {
 
     console.log(msg)
 
-    if (process.env.TESTING) throw new Error('CompileError')
+    if (process.env.TESTING) throw 'CompilerError'
     process.exit(1)
 }

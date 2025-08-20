@@ -22,7 +22,5 @@ export async function compile(sourceText: string, backend: string) {
             Bun.write('build/qbe/il.ssa', il)
             await $`cd build/qbe/ && qbe -o out.s il.ssa && cc out.s`
         }
-    } catch (err) {
-        console.log(err)
-    }
+    } catch (err) {}
 }
