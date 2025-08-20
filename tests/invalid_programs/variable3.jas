@@ -1,0 +1,3 @@
+// Expect variable type.
+
+let x: = 5;

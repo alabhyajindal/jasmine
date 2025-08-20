@@ -1,0 +1,3 @@
+// Expect colon.
+
+let x = 5;

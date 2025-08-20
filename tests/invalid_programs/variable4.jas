@@ -1,0 +1,3 @@
+// Invalid variable assignment.
+
+42 = 5;
