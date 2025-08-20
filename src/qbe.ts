@@ -87,7 +87,7 @@ data $fmt = { b "%d\\n", b 0 }`
                 break
             }
             default:
-                console.error(stmt)
+                console.log(stmt)
                 reportError('Unsupported statement.')
         }
     }
@@ -196,7 +196,7 @@ data $fmt = { b "%d\\n", b 0 }`
             case 'CallExpr':
                 return this.callExpression(expression)
             default:
-                console.error(expression)
+                console.log(expression)
                 reportError('Unsupported expression.')
         }
     }
@@ -234,7 +234,7 @@ data $fmt = { b "%d\\n", b 0 }`
             case 'boolean':
                 return expression.value ? 1 : 0
             default:
-                console.error(expression)
+                console.log(expression)
                 reportError('Unsupported literal expression.')
         }
     }

@@ -142,7 +142,7 @@ export default class BinaryenCompiler {
             case 'ForStmt':
                 return this.forStatement(stmt)
             default: {
-                console.error(stmt)
+                console.log(stmt)
                 reportError('Unsupported statement.')
             }
         }
@@ -245,7 +245,7 @@ export default class BinaryenCompiler {
             case 'AssignExpr':
                 return this.assignExpression(expression)
             default:
-                console.error(expression)
+                console.log(expression)
                 reportError('Unsupported ast type.')
         }
     }
@@ -318,7 +318,7 @@ export default class BinaryenCompiler {
                 return this.mod.block(null, instrs, binaryen.i32)
             }
             default:
-                console.error(expression)
+                console.log(expression)
                 reportError('Unsupported literal expression.')
         }
     }

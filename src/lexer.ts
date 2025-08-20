@@ -126,7 +126,7 @@ export default class Lexer {
                 } else if (this.isAlpha(c)) {
                     this.identifier()
                 } else {
-                    console.error(c)
+                    console.log(c)
                     reportError(`Invalid character ${this.peek()}.`)
                 }
         }
