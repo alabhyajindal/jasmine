@@ -4,361 +4,363 @@ import type { ForStmt, FunDecl, IfStmt, Stmt } from './Stmt'
 import TokenType from './TokenType'
 import type { ValueType } from './ValueType'
 
-let scopeStack: Map<string, [string, any]>[] = []
+export default class QBECompiler {
+    scopeStack: Map<string, [string, any]>[] = []
+    ctx: string[] = []
+    data: string[] = []
+    functions: string[] = []
+    strCounter = 0
+    varCounter = 0
+    blockCounter = 0
 
-let ctx: string[] = []
-let data: string[] = []
-let functions: string[] = []
+    readonly ilType: Map<ValueType, any> = new Map([
+        [TokenType.TYPE_INT, 'w'],
+        [TokenType.TYPE_NIL, ''],
+    ])
 
-const ilType: Map<ValueType, any> = new Map([
-    [TokenType.TYPE_INT, 'w'],
-    [TokenType.TYPE_NIL, ''],
-])
+    formIL() {
+        return `${this.data.join('\n')}
 
-function formIL() {
-    return `${data.join('\n')}
-
-${functions.join('\n')}
+${this.functions.join('\n')}
 
 export function w $main() {
 @start
-    ${ctx.join('\n    ')}
+    ${this.ctx.join('\n    ')}
     ret 0
 }
   
 data $fmt = { b "%d\\n", b 0 }`
-}
-
-export default function compile(stmts: Stmt[]) {
-    beginScope()
-    compileStatements(stmts)
-    const il = formIL()
-    endScope()
-
-    return il
-}
-
-function compileStatements(stmts: Stmt[]) {
-    for (let stmt of stmts) {
-        compileStatement(stmt)
     }
-}
 
-function compileStatement(stmt: Stmt) {
-    switch (stmt.type) {
-        case 'ExprStmt': {
-            return compileExpression(stmt.expression)
-        }
-        case 'VariableStmt': {
-            let varName = getVarName()
-            let val = compileExpression(stmt.initializer)
-            let varType = stmt.valueType
+    compile(stmts: Stmt[]) {
+        this.beginScope()
+        this.compileStatements(stmts)
+        const il = this.formIL()
+        this.endScope()
 
-            declareVariable(stmt.name.lexeme, varName, varType)
-
-            ctx.push(`${varName} =w copy ${val}`)
-            return varName
-        }
-        case 'IfStmt': {
-            ifStatement(stmt)
-            break
-        }
-        case 'BlockStmt': {
-            beginScope()
-            compileStatements(stmt.statements)
-            endScope()
-            break
-        }
-        case 'ForStmt': {
-            forStatement(stmt)
-            break
-        }
-        case 'FunDecl': {
-            fnDeclaration(stmt)
-            break
-        }
-        case 'ReturnStmt': {
-            let val = compileExpression(stmt.value)
-            if (val) ctx.push(`ret ${val}`)
-            else ctx.push('ret')
-            break
-        }
-        default:
-            console.error(stmt)
-            reportError('Unsupported statement.')
+        return il
     }
-}
 
-function fnDeclaration(stmt: FunDecl) {
-    let fnName = stmt.name.lexeme
+    compileStatements(stmts: Stmt[]) {
+        for (let stmt of stmts) {
+            this.compileStatement(stmt)
+        }
+    }
 
-    beginScope()
-    let params = stmt.params.map((p) => {
-        let paramName = getVarName()
-        declareVariable(p.name, paramName, p.type)
-        return `${ilType.get(p.type)} ${paramName}`
-    })
-    let returnType = ilType.get(stmt.returnType)
+    compileStatement(stmt: Stmt) {
+        switch (stmt.type) {
+            case 'ExprStmt': {
+                return this.compileExpression(stmt.expression)
+            }
+            case 'VariableStmt': {
+                let varName = this.getVarName()
+                let val = this.compileExpression(stmt.initializer)
+                let varType = stmt.valueType
 
-    let prevCtx = ctx
-    ctx = []
-    compileStatements(stmt.body.statements)
-    // Add an empty return at the end of the function body if the return type is nil
-    if (returnType == '') ctx.push('ret')
+                this.declareVariable(stmt.name.lexeme, varName, varType)
 
-    let fn = `function ${returnType} $${fnName}(${params.join(', ')}) {
+                this.ctx.push(`${varName} =w copy ${val}`)
+                return varName
+            }
+            case 'IfStmt': {
+                this.ifStatement(stmt)
+                break
+            }
+            case 'BlockStmt': {
+                this.beginScope()
+                this.compileStatements(stmt.statements)
+                this.endScope()
+                break
+            }
+            case 'ForStmt': {
+                this.forStatement(stmt)
+                break
+            }
+            case 'FunDecl': {
+                this.fnDeclaration(stmt)
+                break
+            }
+            case 'ReturnStmt': {
+                let val = this.compileExpression(stmt.value)
+                if (val) this.ctx.push(`ret ${val}`)
+                else this.ctx.push('ret')
+                break
+            }
+            default:
+                console.error(stmt)
+                reportError('Unsupported statement.')
+        }
+    }
+
+    fnDeclaration(stmt: FunDecl) {
+        let fnName = stmt.name.lexeme
+
+        this.beginScope()
+        let params = stmt.params.map((p) => {
+            let paramName = this.getVarName()
+            this.declareVariable(p.name, paramName, p.type)
+            return `${this.ilType.get(p.type)} ${paramName}`
+        })
+        let returnType = this.ilType.get(stmt.returnType)
+
+        let prevCtx = this.ctx
+        this.ctx = []
+        this.compileStatements(stmt.body.statements)
+        // Add an empty return at the end of the function body if the return type is nil
+        if (returnType == '') this.ctx.push('ret')
+
+        let fn = `function ${returnType} $${fnName}(${params.join(', ')}) {
 @start
-    ${ctx.join('\n    ')}
+    ${this.ctx.join('\n    ')}
 }`
-    functions.push(fn)
-    endScope()
+        this.functions.push(fn)
+        this.endScope()
 
-    ctx = prevCtx
-}
-
-function ifStatement(stmt: IfStmt) {
-    let condition = compileExpression(stmt.condition)
-
-    let thenLabel = getBlockLabel()
-    let elseLabel = stmt.elseBranch ? getBlockLabel() : null
-    let endLabel = getBlockLabel()
-
-    let falseTarget = elseLabel ? `${elseLabel}` : `${endLabel}`
-    ctx.push(`jnz ${condition}, ${thenLabel}, ${falseTarget}`)
-
-    ctx.push(`${thenLabel}`)
-    compileStatement(stmt.thenBranch)
-    if (ctx[ctx.length - 1]?.substring(0, 3) != 'ret') ctx.push(`jmp ${endLabel}`)
-
-    if (stmt.elseBranch && elseLabel) {
-        ctx.push(`${elseLabel}`)
-        compileStatement(stmt.elseBranch)
-        if (ctx[ctx.length - 1]?.substring(0, 3) != 'ret') ctx.push(`jmp ${endLabel}`)
+        this.ctx = prevCtx
     }
 
-    ctx.push(`${endLabel}`)
-}
+    ifStatement(stmt: IfStmt) {
+        let condition = this.compileExpression(stmt.condition)
 
-function forStatement(stmt: ForStmt) {
-    let startVal = compileExpression(stmt.start)
-    let endVal = compileExpression(stmt.end)
+        let thenLabel = this.getBlockLabel()
+        let elseLabel = stmt.elseBranch ? this.getBlockLabel() : null
+        let endLabel = this.getBlockLabel()
 
-    // Create unique labels for the loop structure
-    let conditionLabel = getBlockLabel()
-    let bodyLabel = getBlockLabel()
-    let endLabel = getBlockLabel()
+        let falseTarget = elseLabel ? `${elseLabel}` : `${endLabel}`
+        this.ctx.push(`jnz ${condition}, ${thenLabel}, ${falseTarget}`)
 
-    beginScope()
-    let loopVarName = getVarName()
-    declareVariable(stmt.variable, loopVarName, TokenType.TYPE_INT)
-    ctx.push(`${loopVarName} =w copy ${startVal}`)
+        this.ctx.push(`${thenLabel}`)
+        this.compileStatement(stmt.thenBranch)
+        if (this.ctx[this.ctx.length - 1]?.substring(0, 3) != 'ret')
+            this.ctx.push(`jmp ${endLabel}`)
 
-    // Jump to condition check
-    ctx.push(`jmp ${conditionLabel}`)
-
-    // Condition check: continue while loopVar < endVal
-    ctx.push(`${conditionLabel}`)
-    let condResult = getVarName()
-    ctx.push(`${condResult} =w csltw ${loopVarName}, ${endVal}`)
-    ctx.push(`jnz ${condResult}, ${bodyLabel}, ${endLabel}`)
-
-    // Loop body execution
-    ctx.push(`${bodyLabel}`)
-    compileStatement(stmt.body)
-
-    // Increment loop counter
-    let incrementResult = getVarName()
-    ctx.push(`${incrementResult} =w add ${loopVarName}, 1`)
-    ctx.push(`${loopVarName} =w copy ${incrementResult}`)
-    ctx.push(`jmp ${conditionLabel}`)
-
-    ctx.push(`${endLabel}`)
-    endScope()
-}
-
-function compileExpression(expression: Expr) {
-    switch (expression.type) {
-        case 'BinaryExpr':
-            return binaryExpression(expression)
-        case 'GroupingExpr':
-            return compileExpression(expression.expression)
-        case 'LiteralExpr':
-            return literalExpression(expression)
-        case 'VariableExpr':
-            return variableExpression(expression)
-        case 'AssignExpr':
-            return assignExpression(expression)
-        case 'CallExpr':
-            return callExpression(expression)
-        default:
-            console.error(expression)
-            reportError('Unsupported expression.')
-    }
-}
-
-function binaryExpression(expression: BinaryExpr) {
-    let left = compileExpression(expression.left)
-    let right = compileExpression(expression.right)
-
-    const operatorMap: Partial<Record<TokenType, string>> = {
-        PLUS: 'add',
-        MINUS: 'sub',
-        SLASH: 'div',
-        STAR: 'mul',
-        LESS: 'csltw',
-        LESS_EQUAL: 'cslew',
-        GREATER: 'csgtw',
-        GREATER_EQUAL: 'csgew',
-        EQUAL_EQUAL: 'ceqw',
-        BANG_EQUAL: 'cnew',
-    }
-    let varName = getVarName()
-    ctx.push(`${varName} =w ${operatorMap[expression.operator.type]} ${left}, ${right}`)
-    return varName
-}
-
-function literalExpression(expression: LiteralExpr) {
-    switch (typeof expression.value) {
-        case 'number':
-            return expression.value
-        case 'string':
-            let strName = getStringName()
-            let val = expression.value
-            data.push(`data ${strName} = { b "${val}", b 0 }`)
-            return strName
-        case 'boolean':
-            return expression.value ? 1 : 0
-        default:
-            console.error(expression)
-            reportError('Unsupported literal expression.')
-    }
-}
-
-function variableExpression(expression: VariableExpr) {
-    const result = lookupVariable(expression.name.lexeme)
-    if (!result) {
-        reportError(`Undefined variable: ${expression.name.lexeme}`)
-    }
-    return result[0]
-}
-
-function assignExpression(expression: AssignExpr) {
-    let val = compileExpression(expression.value)
-
-    let result = lookupVariable(expression.name.lexeme)
-    if (!result) {
-        reportError(`Undefined variable: ${expression.name.lexeme}`)
-    }
-
-    let [varName, _] = result
-    ctx.push(`${varName} =w copy ${val}`)
-    return expression.name.lexeme
-}
-
-function callExpression(expression: CallExpr) {
-    let fnName = expression.callee.name.lexeme
-    if (fnName == 'println') {
-        return printFunction(expression)
-    }
-
-    // Handle user-defined functions
-    let args = expression.args.map((arg) => compileExpression(arg))
-    let resultVar = getVarName()
-    let argList = args.map((arg) => `w ${arg}`).join(', ')
-    ctx.push(`${resultVar} =w call $${fnName}(${argList})`)
-    return resultVar
-}
-
-function printFunction(expression: CallExpr) {
-    let argExpr = expression.args[0]!
-    if (argExpr.type == 'LiteralExpr') {
-        let val = argExpr.value
-        if (typeof val == 'string') {
-            let strName = getStringName()
-            data.push(`data ${strName} = { b "${val}", b 0 }`)
-            ctx.push(`call $puts(w ${strName})`)
-        } else {
-            if (typeof val == 'boolean') val = val ? 1 : 0
-            ctx.push(`call $printf(l $fmt, ..., w ${val})`)
+        if (stmt.elseBranch && elseLabel) {
+            this.ctx.push(`${elseLabel}`)
+            this.compileStatement(stmt.elseBranch)
+            if (this.ctx[this.ctx.length - 1]?.substring(0, 3) != 'ret')
+                this.ctx.push(`jmp ${endLabel}`)
         }
-    } else if (argExpr.type == 'VariableExpr') {
-        let varName = compileExpression(argExpr)
 
-        let result = lookupVariable(argExpr.name.lexeme)
-        if (result) {
-            let [_, varType] = result
-            if (varType == TokenType.TYPE_STR) {
-                ctx.push(`call $puts(w ${varName})`)
+        this.ctx.push(`${endLabel}`)
+    }
+
+    forStatement(stmt: ForStmt) {
+        let startVal = this.compileExpression(stmt.start)
+        let endVal = this.compileExpression(stmt.end)
+
+        // Create unique labels for the loop structure
+        let conditionLabel = this.getBlockLabel()
+        let bodyLabel = this.getBlockLabel()
+        let endLabel = this.getBlockLabel()
+
+        this.beginScope()
+        let loopVarName = this.getVarName()
+        this.declareVariable(stmt.variable, loopVarName, TokenType.TYPE_INT)
+        this.ctx.push(`${loopVarName} =w copy ${startVal}`)
+
+        // Jump to condition check
+        this.ctx.push(`jmp ${conditionLabel}`)
+
+        // Condition check: continue while loopVar < endVal
+        this.ctx.push(`${conditionLabel}`)
+        let condResult = this.getVarName()
+        this.ctx.push(`${condResult} =w csltw ${loopVarName}, ${endVal}`)
+        this.ctx.push(`jnz ${condResult}, ${bodyLabel}, ${endLabel}`)
+
+        // Loop body execution
+        this.ctx.push(`${bodyLabel}`)
+        this.compileStatement(stmt.body)
+
+        // Increment loop counter
+        let incrementResult = this.getVarName()
+        this.ctx.push(`${incrementResult} =w add ${loopVarName}, 1`)
+        this.ctx.push(`${loopVarName} =w copy ${incrementResult}`)
+        this.ctx.push(`jmp ${conditionLabel}`)
+
+        this.ctx.push(`${endLabel}`)
+        this.endScope()
+    }
+
+    compileExpression(expression: Expr): any {
+        switch (expression.type) {
+            case 'BinaryExpr':
+                return this.binaryExpression(expression)
+            case 'GroupingExpr':
+                return this.compileExpression(expression.expression)
+            case 'LiteralExpr':
+                return this.literalExpression(expression)
+            case 'VariableExpr':
+                return this.variableExpression(expression)
+            case 'AssignExpr':
+                return this.assignExpression(expression)
+            case 'CallExpr':
+                return this.callExpression(expression)
+            default:
+                console.error(expression)
+                reportError('Unsupported expression.')
+        }
+    }
+
+    binaryExpression(expression: BinaryExpr) {
+        let left = this.compileExpression(expression.left)
+        let right = this.compileExpression(expression.right)
+
+        const operatorMap: Partial<Record<TokenType, string>> = {
+            PLUS: 'add',
+            MINUS: 'sub',
+            SLASH: 'div',
+            STAR: 'mul',
+            LESS: 'csltw',
+            LESS_EQUAL: 'cslew',
+            GREATER: 'csgtw',
+            GREATER_EQUAL: 'csgew',
+            EQUAL_EQUAL: 'ceqw',
+            BANG_EQUAL: 'cnew',
+        }
+        let varName = this.getVarName()
+        this.ctx.push(`${varName} =w ${operatorMap[expression.operator.type]} ${left}, ${right}`)
+        return varName
+    }
+
+    literalExpression(expression: LiteralExpr) {
+        switch (typeof expression.value) {
+            case 'number':
+                return expression.value
+            case 'string':
+                let strName = this.getStringName()
+                let val = expression.value
+                this.data.push(`data ${strName} = { b "${val}", b 0 }`)
+                return strName
+            case 'boolean':
+                return expression.value ? 1 : 0
+            default:
+                console.error(expression)
+                reportError('Unsupported literal expression.')
+        }
+    }
+
+    variableExpression(expression: VariableExpr) {
+        const result = this.lookupVariable(expression.name.lexeme)
+        if (!result) {
+            reportError(`Undefined variable: ${expression.name.lexeme}`)
+        }
+        return result[0]
+    }
+
+    assignExpression(expression: AssignExpr) {
+        let val = this.compileExpression(expression.value)
+
+        let result = this.lookupVariable(expression.name.lexeme)
+        if (!result) {
+            reportError(`Undefined variable: ${expression.name.lexeme}`)
+        }
+
+        let [varName, _] = result
+        this.ctx.push(`${varName} =w copy ${val}`)
+        return expression.name.lexeme
+    }
+
+    callExpression(expression: CallExpr) {
+        let fnName = expression.callee.name.lexeme
+        if (fnName == 'println') {
+            return this.printFunction(expression)
+        }
+
+        // Handle user-defined functions
+        let args = expression.args.map((arg) => this.compileExpression(arg))
+        let resultVar = this.getVarName()
+        let argList = args.map((arg) => `w ${arg}`).join(', ')
+        this.ctx.push(`${resultVar} =w call $${fnName}(${argList})`)
+        return resultVar
+    }
+
+    printFunction(expression: CallExpr) {
+        let argExpr = expression.args[0]!
+        if (argExpr.type == 'LiteralExpr') {
+            let val = argExpr.value
+            if (typeof val == 'string') {
+                let strName = this.getStringName()
+                this.data.push(`data ${strName} = { b "${val}", b 0 }`)
+                this.ctx.push(`call $puts(w ${strName})`)
             } else {
-                ctx.push(`call $printf(l $fmt, ..., w ${varName})`)
+                if (typeof val == 'boolean') val = val ? 1 : 0
+                this.ctx.push(`call $printf(l $fmt, ..., w ${val})`)
+            }
+        } else if (argExpr.type == 'VariableExpr') {
+            let varName = this.compileExpression(argExpr)
+
+            let result = this.lookupVariable(argExpr.name.lexeme)
+            if (result) {
+                let [_, varType] = result
+                if (varType == TokenType.TYPE_STR) {
+                    this.ctx.push(`call $puts(w ${varName})`)
+                } else {
+                    this.ctx.push(`call $printf(l $fmt, ..., w ${varName})`)
+                }
+            }
+        } else {
+            let val = this.compileExpression(argExpr)
+            this.ctx.push(`call $printf(l $fmt, ..., w ${val})`)
+        }
+    }
+
+    // Scope
+    beginScope() {
+        this.scopeStack.push(new Map())
+    }
+
+    endScope() {
+        this.scopeStack.pop()
+    }
+
+    declareVariable(name: string, ilName: string, type: any) {
+        const currentScope = this.scopeStack[this.scopeStack.length - 1]
+        // Current scope will always exist since we create the topmost scope in `compile`
+        currentScope!.set(name, [ilName, type])
+    }
+
+    lookupVariable(name: string): [string, any] | null {
+        // Search from innermost to outermost scope
+        for (let i = this.scopeStack.length - 1; i >= 0; i--) {
+            const scope = this.scopeStack[i]!
+            if (scope.has(name)) {
+                return scope.get(name)!
             }
         }
-    } else {
-        let val = compileExpression(argExpr)
-        ctx.push(`call $printf(l $fmt, ..., w ${val})`)
+        return null
     }
-}
 
-// Scope
-function beginScope() {
-    scopeStack.push(new Map())
-}
-
-function endScope() {
-    scopeStack.pop()
-}
-
-function declareVariable(name: string, ilName: string, type: any) {
-    const currentScope = scopeStack[scopeStack.length - 1]
-    // Current scope will always exist since we create the topmost scope in `compile`
-    currentScope!.set(name, [ilName, type])
-}
-
-function lookupVariable(name: string): [string, any] | null {
-    // Search from innermost to outermost scope
-    for (let i = scopeStack.length - 1; i >= 0; i--) {
-        const scope = scopeStack[i]!
-        if (scope.has(name)) {
-            return scope.get(name)!
-        }
+    // Utils
+    /**
+     * Generate unique string names
+     */
+    getStringName(): string {
+        this.strCounter++
+        return `$str_${this.strCounter}`
     }
-    return null
-}
 
-// Utils
-let strCounter = 0
-let varCounter = 0
-let blockCounter = 0
+    /**
+     * Generate unique variable names
+     */
+    getVarName(): string {
+        const alphabet = 'abcdefghijklmnopqrstuvwxyz'
+        let result = ''
+        let num = this.varCounter
 
-/**
- * Generate unique string names
- */
-function getStringName(): string {
-    strCounter++
-    return `$str_${strCounter}`
-}
+        do {
+            result = alphabet[num % 26] + result
+            num = Math.floor(num / 26)
+        } while (num > 0)
 
-/**
- * Generate unique variable names
- */
-function getVarName(): string {
-    const alphabet = 'abcdefghijklmnopqrstuvwxyz'
-    let result = ''
-    let num = varCounter
+        this.varCounter++
+        return `%${result}`
+    }
 
-    do {
-        result = alphabet[num % 26] + result
-        num = Math.floor(num / 26)
-    } while (num > 0)
-
-    varCounter++
-    return `%${result}`
-}
-
-/**
- * Generate unique block labels
- */
-function getBlockLabel(): string {
-    blockCounter++
-    return `@block_${blockCounter}`
+    /**
+     * Generate unique block labels
+     */
+    getBlockLabel(): string {
+        this.blockCounter++
+        return `@block_${this.blockCounter}`
+    }
 }
