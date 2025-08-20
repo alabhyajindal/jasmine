@@ -1,14 +1,13 @@
 import { $ } from 'bun'
-import scan from './lexer'
-import parse from './parser'
 import binaryenCompile from './binaryen'
 import qbeCompile from './qbe'
 import { reportError } from './error'
 import Lexer from './lexer'
+import Parser from './parser'
 
 export async function compile(sourceText: string, backend: string) {
     const tokens = new Lexer().scan(sourceText)
-    const statements = parse(tokens)
+    const statements = new Parser().parse(tokens)
 
     if (backend == 'binaryen') {
         const wat = binaryenCompile(statements)

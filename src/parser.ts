@@ -15,301 +15,310 @@ import { ValueTypes, type ValueType } from './ValueType'
 
 // TODO: Clean up the parser - lots of unnecessary information. Is line number really required? Maybe for reporting errors but not for WebAssembly - could really benefit from a type checker - that ensures anything that makes it's way past it is a valid program. Need that anyways since we can't rely on Wasm for error reporting as we have another compiler backend coming up
 
-// Initializing variables
-let current = 0
-let tokens: Token[]
+export default class Parser {
+    current = 0
+    tokens: Token[] = []
 
-export default function parse(t: Token[]) {
-    tokens = t
+    parse(t: Token[]) {
+        this.tokens = t
 
-    let statements = []
-    while (!isAtEnd()) {
-        statements.push(statement())
-    }
-
-    return statements
-}
-
-function statement() {
-    if (match(TokenType.LET)) {
-        return variableStatement()
-    }
-    if (match(TokenType.LEFT_BRACE)) {
-        return blockStatement()
-    }
-    if (match(TokenType.IF)) {
-        return ifStatement()
-    }
-    if (match(TokenType.FN)) {
-        return funDeclaration()
-    }
-    if (match(TokenType.RETURN)) {
-        return returnStatement()
-    }
-    if (match(TokenType.FOR)) {
-        return forStatement()
-    }
-
-    return expressionStatement()
-}
-
-function variableStatement(): VariableStmt {
-    let name = consume(TokenType.IDENTIFER, 'Expect variable name.')
-    consume(TokenType.COLON, 'Expect colon.')
-    let varType = consume(ValueTypes, 'Expect variable type.')
-
-    consume(TokenType.EQUAL, 'Expect equal sign.')
-    let initializer = expression()
-    consume(TokenType.SEMICOLON, 'Expect semicolon after expression.')
-    return { name, initializer, type: 'VariableStmt', valueType: varType.type }
-}
-
-function blockStatement(): BlockStmt {
-    let statements = []
-
-    while (!check(TokenType.RIGHT_BRACE)) {
-        statements.push(statement())
-    }
-    consume(TokenType.RIGHT_BRACE, "Expect '}' after block.")
-    return { type: 'BlockStmt', statements }
-}
-
-function ifStatement(): IfStmt {
-    let condition = expression()
-    let thenBranch = statement()
-    let elseBranch = null
-    if (match(TokenType.ELSE)) {
-        elseBranch = statement()
-    }
-
-    return { condition, thenBranch, elseBranch, type: 'IfStmt' }
-}
-
-function funDeclaration(): FunDecl {
-    let name = consume(TokenType.IDENTIFER, 'Expect function name.')
-    consume(TokenType.LEFT_PAREN, "Expect '(' after function name.")
-
-    let params: { name: string; type: ValueType }[] = []
-
-    if (!check(TokenType.RIGHT_PAREN)) {
-        do {
-            let name = consume(TokenType.IDENTIFER, 'Expect parameter name.').lexeme
-            match(TokenType.COLON)
-            let type = consume(ValueTypes, 'Expect parameter type.').type
-            params.push({ name, type })
-        } while (match(TokenType.COMMA))
-    }
-
-    consume(TokenType.RIGHT_PAREN, "Expect ')' after parameters.")
-    consume(TokenType.ARROW, "Expect '->' after parameters.")
-    let returnType = consume(ValueTypes, "Expect return type after '->'.").type
-
-    consume(TokenType.LEFT_BRACE, "Expect '{' before function body.")
-    let body = blockStatement()
-    return { name, params, returnType, body, type: 'FunDecl' }
-}
-
-function returnStatement(): ReturnStmt {
-    let value = null
-    if (!check(TokenType.SEMICOLON)) {
-        value = expression()
-    }
-    consume(TokenType.SEMICOLON, 'Expect semicolon after expression.')
-
-    return { value: value as Expr, type: 'ReturnStmt' }
-}
-
-function forStatement(): ForStmt {
-    let variable = consume(TokenType.IDENTIFER, 'Expect identifier after for keyword.').lexeme
-    consume(TokenType.IN, 'Expect in after for variable.')
-
-    let start = expression()
-
-    consume(TokenType.RANGE, 'Expect .. after loop starting value.')
-
-    let end = expression()
-
-    // NOTE: feels weird that we have to consume the opening brace when we expect a block statement - can this be moved there?
-    consume(TokenType.LEFT_BRACE, "Expect '{' before for loop body.")
-    let body = blockStatement()
-
-    return { type: 'ForStmt', start, end, variable, body }
-}
-
-function expressionStatement(): ExprStmt {
-    let expr = expression()
-    consume(TokenType.SEMICOLON, 'Expect semicolon after expression.')
-    return { expression: expr, type: 'ExprStmt' }
-}
-
-function expression(): Expr {
-    return assignment()
-}
-
-function assignment(): Expr {
-    let expr = equality()
-
-    if (match(TokenType.EQUAL)) {
-        let equals = previous()
-        let value = assignment()
-
-        if (expr.type == 'VariableExpr') {
-            let name = expr.name
-            return { name, value, type: 'AssignExpr' }
+        let statements = []
+        while (!this.isAtEnd()) {
+            statements.push(this.statement())
         }
-        reportError('Invalid variable assignment.', equals)
+
+        return statements
     }
 
-    return expr
-}
+    statement() {
+        if (this.match(TokenType.LET)) {
+            return this.variableStatement()
+        }
+        if (this.match(TokenType.LEFT_BRACE)) {
+            return this.blockStatement()
+        }
+        if (this.match(TokenType.IF)) {
+            return this.ifStatement()
+        }
+        if (this.match(TokenType.FN)) {
+            return this.funDeclaration()
+        }
+        if (this.match(TokenType.RETURN)) {
+            return this.returnStatement()
+        }
+        if (this.match(TokenType.FOR)) {
+            return this.forStatement()
+        }
 
-function equality(): Expr {
-    let expr = comparison()
-    while (match(TokenType.BANG_EQUAL, TokenType.EQUAL_EQUAL)) {
-        let operator = previous()
-        let right = comparison()
-        expr = { left: expr, operator, right, type: 'BinaryExpr' }
+        return this.expressionStatement()
     }
 
-    return expr
-}
+    variableStatement(): VariableStmt {
+        let name = this.consume(TokenType.IDENTIFER, 'Expect variable name.')
+        this.consume(TokenType.COLON, 'Expect colon.')
+        let varType = this.consume(ValueTypes, 'Expect variable type.')
 
-function comparison(): Expr {
-    let expr = term()
-
-    while (
-        match(TokenType.GREATER, TokenType.GREATER_EQUAL, TokenType.LESS, TokenType.LESS_EQUAL)
-    ) {
-        let operator = previous()
-        let right = term()
-        expr = { left: expr, operator, right, type: 'BinaryExpr' }
+        this.consume(TokenType.EQUAL, 'Expect equal sign.')
+        let initializer = this.expression()
+        this.consume(TokenType.SEMICOLON, 'Expect semicolon after expression.')
+        return { name, initializer, type: 'VariableStmt', valueType: varType.type }
     }
 
-    return expr
-}
+    blockStatement(): BlockStmt {
+        let statements = []
 
-function term(): Expr {
-    let expr = factor()
-    while (match(TokenType.PLUS, TokenType.MINUS)) {
-        let operator = previous()
-        let right = factor()
-        expr = { left: expr, operator, right, type: 'BinaryExpr' }
+        while (!this.check(TokenType.RIGHT_BRACE)) {
+            statements.push(this.statement())
+        }
+        this.consume(TokenType.RIGHT_BRACE, "Expect '}' after block.")
+        return { type: 'BlockStmt', statements }
     }
 
-    return expr
-}
+    ifStatement(): IfStmt {
+        let condition = this.expression()
+        let thenBranch = this.statement()
+        let elseBranch = null
+        if (this.match(TokenType.ELSE)) {
+            elseBranch = this.statement()
+        }
 
-function factor(): Expr {
-    let expr: Expr = unary()
-    while (match(TokenType.SLASH, TokenType.STAR)) {
-        let operator = previous()
-        let right = unary()
-        expr = { left: expr, operator, right, type: 'BinaryExpr' }
+        return { condition, thenBranch, elseBranch, type: 'IfStmt' }
     }
 
-    return expr
-}
+    funDeclaration(): FunDecl {
+        let name = this.consume(TokenType.IDENTIFER, 'Expect function name.')
+        this.consume(TokenType.LEFT_PAREN, "Expect '(' after function name.")
 
-function unary(): Expr {
-    if (match(TokenType.BANG, TokenType.MINUS)) {
-        let operator = previous()
-        let right = unary()
-        return { operator, right, type: 'UnaryExpr' }
-    }
+        let params: { name: string; type: ValueType }[] = []
 
-    return call()
-}
-
-function call(): Expr {
-    let expr = primary()
-
-    if (match(TokenType.LEFT_PAREN)) {
-        let args = []
-        if (!check(TokenType.RIGHT_PAREN)) {
+        if (!this.check(TokenType.RIGHT_PAREN)) {
             do {
-                args.push(expression())
-            } while (match(TokenType.COMMA))
+                let name = this.consume(TokenType.IDENTIFER, 'Expect parameter name.').lexeme
+                this.match(TokenType.COLON)
+                let type = this.consume(ValueTypes, 'Expect parameter type.').type
+                params.push({ name, type })
+            } while (this.match(TokenType.COMMA))
         }
-        if (expr.type == 'VariableExpr' && expr.name.lexeme == 'println') {
-            if (args.length != 1) {
-                reportError('println expects a single argument.', peek())
+
+        this.consume(TokenType.RIGHT_PAREN, "Expect ')' after parameters.")
+        this.consume(TokenType.ARROW, "Expect '->' after parameters.")
+        let returnType = this.consume(ValueTypes, "Expect return type after '->'.").type
+
+        this.consume(TokenType.LEFT_BRACE, "Expect '{' before function body.")
+        let body = this.blockStatement()
+        return { name, params, returnType, body, type: 'FunDecl' }
+    }
+
+    returnStatement(): ReturnStmt {
+        let value = null
+        if (!this.check(TokenType.SEMICOLON)) {
+            value = this.expression()
+        }
+        this.consume(TokenType.SEMICOLON, 'Expect semicolon after expression.')
+
+        return { value: value as Expr, type: 'ReturnStmt' }
+    }
+
+    forStatement(): ForStmt {
+        let variable = this.consume(
+            TokenType.IDENTIFER,
+            'Expect identifier after for keyword.'
+        ).lexeme
+        this.consume(TokenType.IN, 'Expect in after for variable.')
+
+        let start = this.expression()
+
+        this.consume(TokenType.RANGE, 'Expect .. after loop starting value.')
+
+        let end = this.expression()
+
+        // NOTE: feels weird that we have to consume the opening brace when we expect a block statement - can this be moved there?
+        this.consume(TokenType.LEFT_BRACE, "Expect '{' before for loop body.")
+        let body = this.blockStatement()
+
+        return { type: 'ForStmt', start, end, variable, body }
+    }
+
+    expressionStatement(): ExprStmt {
+        let expr = this.expression()
+        this.consume(TokenType.SEMICOLON, 'Expect semicolon after expression.')
+        return { expression: expr, type: 'ExprStmt' }
+    }
+
+    expression(): Expr {
+        return this.assignment()
+    }
+
+    assignment(): Expr {
+        let expr = this.equality()
+
+        if (this.match(TokenType.EQUAL)) {
+            let equals = this.previous()
+            let value = this.assignment()
+
+            if (expr.type == 'VariableExpr') {
+                let name = expr.name
+                return { name, value, type: 'AssignExpr' }
+            }
+            reportError('Invalid variable assignment.', equals)
+        }
+
+        return expr
+    }
+
+    equality(): Expr {
+        let expr = this.comparison()
+        while (this.match(TokenType.BANG_EQUAL, TokenType.EQUAL_EQUAL)) {
+            let operator = this.previous()
+            let right = this.comparison()
+            expr = { left: expr, operator, right, type: 'BinaryExpr' }
+        }
+
+        return expr
+    }
+
+    comparison(): Expr {
+        let expr = this.term()
+
+        while (
+            this.match(
+                TokenType.GREATER,
+                TokenType.GREATER_EQUAL,
+                TokenType.LESS,
+                TokenType.LESS_EQUAL
+            )
+        ) {
+            let operator = this.previous()
+            let right = this.term()
+            expr = { left: expr, operator, right, type: 'BinaryExpr' }
+        }
+
+        return expr
+    }
+
+    term(): Expr {
+        let expr = this.factor()
+        while (this.match(TokenType.PLUS, TokenType.MINUS)) {
+            let operator = this.previous()
+            let right = this.factor()
+            expr = { left: expr, operator, right, type: 'BinaryExpr' }
+        }
+
+        return expr
+    }
+
+    factor(): Expr {
+        let expr: Expr = this.unary()
+        while (this.match(TokenType.SLASH, TokenType.STAR)) {
+            let operator = this.previous()
+            let right = this.unary()
+            expr = { left: expr, operator, right, type: 'BinaryExpr' }
+        }
+
+        return expr
+    }
+
+    unary(): Expr {
+        if (this.match(TokenType.BANG, TokenType.MINUS)) {
+            let operator = this.previous()
+            let right = this.unary()
+            return { operator, right, type: 'UnaryExpr' }
+        }
+
+        return this.call()
+    }
+
+    call(): Expr {
+        let expr = this.primary()
+
+        if (this.match(TokenType.LEFT_PAREN)) {
+            let args = []
+            if (!this.check(TokenType.RIGHT_PAREN)) {
+                do {
+                    args.push(this.expression())
+                } while (this.match(TokenType.COMMA))
+            }
+            if (expr.type == 'VariableExpr' && expr.name.lexeme == 'println') {
+                if (args.length != 1) {
+                    reportError('println expects a single argument.', this.peek())
+                }
+            }
+
+            this.consume(TokenType.RIGHT_PAREN, "Expect ')' after arguments.")
+            return { callee: expr as VariableExpr, args, type: 'CallExpr' }
+        }
+
+        return expr
+    }
+
+    primary(): Expr {
+        if (this.match(TokenType.TRUE)) {
+            return { value: true, type: 'LiteralExpr' }
+        }
+        if (this.match(TokenType.FALSE)) {
+            return { value: false, type: 'LiteralExpr' }
+        }
+        if (this.match(TokenType.INTEGER)) {
+            return { value: this.previous().literal as number, type: 'LiteralExpr' }
+        }
+        if (this.match(TokenType.STRING)) {
+            return { value: this.previous().literal as string, type: 'LiteralExpr' }
+        }
+        if (this.match(TokenType.IDENTIFER)) {
+            return { name: this.previous(), type: 'VariableExpr' }
+        }
+        if (this.match(TokenType.LEFT_PAREN)) {
+            let expr = this.expression()
+            this.consume(TokenType.RIGHT_PAREN, "Expect ')' after expression.")
+            return { expression: expr, type: 'GroupingExpr' }
+        }
+
+        reportError('Invalid literal expression.', this.peek())
+    }
+
+    match(...types: TokenType[]) {
+        for (let type of types) {
+            if (this.check(type)) {
+                this.advance()
+                return true
             }
         }
-
-        consume(TokenType.RIGHT_PAREN, "Expect ')' after arguments.")
-        return { callee: expr as VariableExpr, args, type: 'CallExpr' }
+        return false
     }
 
-    return expr
-}
-
-function primary(): Expr {
-    if (match(TokenType.TRUE)) {
-        return { value: true, type: 'LiteralExpr' }
-    }
-    if (match(TokenType.FALSE)) {
-        return { value: false, type: 'LiteralExpr' }
-    }
-    if (match(TokenType.INTEGER)) {
-        return { value: previous().literal as number, type: 'LiteralExpr' }
-    }
-    if (match(TokenType.STRING)) {
-        return { value: previous().literal as string, type: 'LiteralExpr' }
-    }
-    if (match(TokenType.IDENTIFER)) {
-        return { name: previous(), type: 'VariableExpr' }
-    }
-    if (match(TokenType.LEFT_PAREN)) {
-        let expr = expression()
-        consume(TokenType.RIGHT_PAREN, "Expect ')' after expression.")
-        return { expression: expr, type: 'GroupingExpr' }
+    check(type: TokenType) {
+        if (this.isAtEnd()) return false
+        return this.peek()?.type == type
     }
 
-    reportError('Invalid literal expression.', peek())
-}
+    advance() {
+        if (!this.isAtEnd()) this.current++
+        return this.previous()
+    }
 
-function match(...types: TokenType[]) {
-    for (let type of types) {
-        if (check(type)) {
-            advance()
-            return true
+    isAtEnd() {
+        return this.peek().type == TokenType.EOF
+    }
+
+    peek() {
+        return this.tokens[this.current]!
+    }
+
+    previous() {
+        return this.tokens[this.current - 1]!
+    }
+
+    /**
+     * Check if the next token is of the expected type. Expected Token types can be a single type or multiple, passed in as an array.
+     */
+    consume<T extends TokenType>(type: readonly T[] | T, msg: string): Token & { type: T } {
+        const types = Array.isArray(type) ? type : [type]
+
+        for (let t of types) {
+            if (this.check(t)) {
+                return this.advance() as Token & { type: T }
+            }
         }
+        reportError(msg, this.previous())
     }
-    return false
-}
-
-function check(type: TokenType) {
-    if (isAtEnd()) return false
-    return peek()?.type == type
-}
-
-function advance() {
-    if (!isAtEnd()) current++
-    return previous()
-}
-
-function isAtEnd() {
-    return peek().type == TokenType.EOF
-}
-
-function peek() {
-    return tokens[current]!
-}
-
-function previous() {
-    return tokens[current - 1]!
-}
-
-/**
- * Check if the next token is of the expected type. Expected Token types can be a single type or multiple, passed in as an array.
- */
-function consume<T extends TokenType>(type: readonly T[] | T, msg: string): Token & { type: T } {
-    const types = Array.isArray(type) ? type : [type]
-
-    for (let t of types) {
-        if (check(t)) {
-            return advance() as Token & { type: T }
-        }
-    }
-    reportError(msg, previous())
 }
