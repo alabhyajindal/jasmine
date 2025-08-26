@@ -23,7 +23,7 @@ for (const fileName of fileNames) {
             await compile(sourceText, 'qbe')
 
             // Calling it again from the shell to read the shell standard output
-            let out = (await $`TESTING=true bun src/main.ts ${filePath} --backend qbe`.text())
+            let out = (await $`TESTING=true bun src/main.ts ${filePath} --target native`.text())
                 .trim()
                 .split('\n')
                 .slice(1, 2)

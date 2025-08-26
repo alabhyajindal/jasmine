@@ -11,10 +11,10 @@
         "printWidth": 100
     },
     "scripts": {
-        "compile:binaryen": "bun src/main.ts main.jas --backend binaryen",
+        "compile:binaryen": "bun src/main.ts main.jas --target wasm",
         "run:binaryen": "cd build/wasm && wasmtime a.wasm",
         "binaryen": "bun compile:binaryen && bun run:binaryen",
-        "compile:qbe": "bun src/main.ts main.jas --backend qbe",
+        "compile:qbe": "bun src/main.ts main.jas --target native",
         "run:qbe": "cd build/qbe && ./a.out",
         "qbe": "bun compile:qbe && bun run:qbe",
         "il": "cd build/qbe && qbe -o out.s il.ssa && cc out.s && ./a.out"

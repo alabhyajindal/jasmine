@@ -13,8 +13,6 @@ import type Token from './Token'
 import TokenType from './TokenType'
 import { ValueTypes, type ValueType } from './ValueType'
 
-// TODO: Clean up the parser - lots of unnecessary information. Is line number really required? Maybe for reporting errors but not for WebAssembly - could really benefit from a type checker - that ensures anything that makes it's way past it is a valid program. Need that anyways since we can't rely on Wasm for error reporting as we have another compiler backend coming up
-
 export default class Parser {
     current = 0
     tokens: Token[] = []

@@ -18,7 +18,7 @@ for (const fileName of fileNames) {
     describe('binaryen', () => {
         test(`${fileName}`, async () => {
             const sourceText = await Bun.file(filePath).text()
-            await compile(sourceText, 'binaryen')
+            await compile(sourceText, 'wasm')
             let out = (await $`TESTING=true bun run:binaryen`.text()).trim().split('\n')
             expect(out).toEqual(expected)
         })
