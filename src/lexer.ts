@@ -40,7 +40,7 @@ export default class Lexer {
             this.scanToken()
         }
 
-        this.tokens.push({ type: TokenType.EOF, lexeme: '', literal: null, line: this.line })
+        this.tokens.push({ type: TokenType.EOF, lexeme: '', line: this.line })
         return this.tokens
     }
 
@@ -141,9 +141,9 @@ export default class Lexer {
         return this.source[this.current - 1]!
     }
 
-    addToken(type: TokenType, literal: Token['literal'] = null) {
+    addToken(type: TokenType) {
         let lexeme = this.source.substring(this.start, this.current)
-        this.tokens.push({ type, lexeme, literal, line: this.line } as Token)
+        this.tokens.push({ type, lexeme, line: this.line } as Token)
     }
 
     match(expected: string) {
@@ -170,8 +170,7 @@ export default class Lexer {
             this.advance()
         }
 
-        let value = Number.parseInt(this.source.substring(this.start, this.current))
-        this.addToken(TokenType.INTEGER, value)
+        this.addToken(TokenType.INTEGER)
     }
 
     string() {
@@ -184,8 +183,7 @@ export default class Lexer {
         }
 
         this.advance()
-        let value = this.source.substring(this.start + 1, this.current - 1)
-        this.addToken(TokenType.STRING, value)
+        this.addToken(TokenType.STRING)
     }
 
     // Handles keywords, types and identifiers

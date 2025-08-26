@@ -247,10 +247,11 @@ export default class Parser {
             return { value: false, type: 'LiteralExpr' }
         }
         if (this.match(TokenType.INTEGER)) {
-            return { value: this.previous().literal as number, type: 'LiteralExpr' }
+            return { value: Number(this.previous().lexeme), type: 'LiteralExpr' }
         }
         if (this.match(TokenType.STRING)) {
-            return { value: this.previous().literal as string, type: 'LiteralExpr' }
+            let value = this.previous().lexeme.slice(1, -1)
+            return { value, type: 'LiteralExpr' }
         }
         if (this.match(TokenType.IDENTIFER)) {
             return { name: this.previous(), type: 'VariableExpr' }
